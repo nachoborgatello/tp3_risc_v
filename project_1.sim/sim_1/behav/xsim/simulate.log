@@ -1,0 +1,16 @@
+Time resolution is 1 ps
+OK    x1
+OK    x2
+OK    x3
+OK    x4
+OK    x5
+OK    x6
+OK    x7
+OK    x8
+OK    x9
+OK    x10
+OK    x11
+OK    x12
+OK    mem[0..3] word0
+Fin TB TOP CHECK.
+$stop called at time : 3030 ns : File "C:/Users/ignac/Downloads/project_1/project_1.srcs/sim_1/new/tb_top.v" Line 66
