@@ -1,0 +1,376 @@
+Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2025.2 (win64) Build 6299465 Fri Nov 14 19:35:11 GMT 2025
+| Date         : Wed Jan 21 18:58:30 2026
+| Host         : DESKTOP-0UNMQ8B running 64-bit major release  (build 9200)
+| Command      : report_methodology -file top_debug_system_methodology_drc_routed.rpt -pb top_debug_system_methodology_drc_routed.pb -rpx top_debug_system_methodology_drc_routed.rpx
+| Design       : top_debug_system
+| Device       : xc7a35tcpg236-1
+| Speed File   : -1
+| Design State : Fully Routed
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Report Methodology
+
+Table of Contents
+-----------------
+1. REPORT SUMMARY
+2. REPORT DETAILS
+
+1. REPORT SUMMARY
+-----------------
+            Netlist: netlist
+          Floorplan: design_1
+      Design limits: <entire design considered>
+             Max checks: <unlimited>
+             Checks found: 68
++-----------+----------+-----------------------------------------------------------+--------+
+| Rule      | Severity | Description                                               | Checks |
++-----------+----------+-----------------------------------------------------------+--------+
+| SYNTH-5   | Warning  | Mapped onto distributed RAM because of timing constraints | 64     |
+| TIMING-18 | Warning  | Missing input or output delay                             | 4      |
++-----------+----------+-----------------------------------------------------------+--------+
+
+2. REPORT DETAILS
+-----------------
+SYNTH-5#1 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem0_reg_0_127_0_0 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#2 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem0_reg_0_127_1_1 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#3 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem0_reg_0_127_2_2 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#4 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem0_reg_0_127_3_3 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#5 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem0_reg_0_127_4_4 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#6 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem0_reg_0_127_5_5 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#7 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem0_reg_0_127_6_6 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#8 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem0_reg_0_127_7_7 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#9 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem0_reg_128_255_0_0 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#10 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem0_reg_128_255_1_1 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#11 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem0_reg_128_255_2_2 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#12 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem0_reg_128_255_3_3 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#13 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem0_reg_128_255_4_4 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#14 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem0_reg_128_255_5_5 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#15 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem0_reg_128_255_6_6 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#16 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem0_reg_128_255_7_7 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#17 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem1_reg_0_127_0_0 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#18 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem1_reg_0_127_1_1 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#19 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem1_reg_0_127_2_2 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#20 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem1_reg_0_127_3_3 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#21 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem1_reg_0_127_4_4 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#22 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem1_reg_0_127_5_5 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#23 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem1_reg_0_127_6_6 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#24 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem1_reg_0_127_7_7 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#25 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem1_reg_128_255_0_0 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#26 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem1_reg_128_255_1_1 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#27 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem1_reg_128_255_2_2 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#28 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem1_reg_128_255_3_3 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#29 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem1_reg_128_255_4_4 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#30 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem1_reg_128_255_5_5 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#31 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem1_reg_128_255_6_6 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#32 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem1_reg_128_255_7_7 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#33 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem2_reg_0_127_0_0 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#34 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem2_reg_0_127_1_1 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#35 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem2_reg_0_127_2_2 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#36 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem2_reg_0_127_3_3 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#37 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem2_reg_0_127_4_4 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#38 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem2_reg_0_127_5_5 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#39 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem2_reg_0_127_6_6 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#40 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem2_reg_0_127_7_7 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#41 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem2_reg_128_255_0_0 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#42 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem2_reg_128_255_1_1 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#43 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem2_reg_128_255_2_2 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#44 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem2_reg_128_255_3_3 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#45 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem2_reg_128_255_4_4 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#46 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem2_reg_128_255_5_5 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#47 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem2_reg_128_255_6_6 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#48 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem2_reg_128_255_7_7 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#49 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem3_reg_0_127_0_0 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#50 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem3_reg_0_127_1_1 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#51 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem3_reg_0_127_2_2 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#52 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem3_reg_0_127_3_3 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#53 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem3_reg_0_127_4_4 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#54 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem3_reg_0_127_5_5 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#55 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem3_reg_0_127_6_6 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#56 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem3_reg_0_127_7_7 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#57 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem3_reg_128_255_0_0 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#58 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem3_reg_128_255_1_1 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#59 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem3_reg_128_255_2_2 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#60 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem3_reg_128_255_3_3 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#61 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem3_reg_128_255_4_4 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#62 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem3_reg_128_255_5_5 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#63 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem3_reg_128_255_6_6 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+SYNTH-5#64 Warning
+Mapped onto distributed RAM because of timing constraints  
+The instance u_cpu/u_mem/u_dmem/mem3_reg_128_255_7_7 is implemented as distributed LUT RAM for the following reason: The timing constraints suggest that the chosen mapping will yield a better timing.
+Related violations: <none>
+
+TIMING-18#1 Warning
+Missing input or output delay  
+An input delay is missing on reset relative to the rising and/or falling clock edge(s) of sys_clk_pin.
+Related violations: <none>
+
+TIMING-18#2 Warning
+Missing input or output delay  
+An input delay is missing on uart_rx relative to the rising and/or falling clock edge(s) of sys_clk_pin.
+Related violations: <none>
+
+TIMING-18#3 Warning
+Missing input or output delay  
+An output delay is missing on s_tick_out relative to the rising and/or falling clock edge(s) of sys_clk_pin.
+Related violations: <none>
+
+TIMING-18#4 Warning
+Missing input or output delay  
+An output delay is missing on uart_tx relative to the rising and/or falling clock edge(s) of sys_clk_pin.
+Related violations: <none>
+
+

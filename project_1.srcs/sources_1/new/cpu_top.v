@@ -25,8 +25,8 @@ module cpu_top #(
     output wire        dbg_halt_seen,
 
     output wire [31:0]       dbg_pc,
-    output wire [32*32-1:0]  dbg_regs_flat,
-    output wire [64*8-1:0]   dbg_dmem_flat,
+    //output wire [32*32-1:0]  dbg_regs_flat,
+    //output wire [64*8-1:0]   dbg_dmem_flat,
     
     // DEBUG stream ports
     input  wire [4:0]  rf_dbg_addr,
@@ -435,7 +435,7 @@ module cpu_top #(
     // MEM
     // ----------------------------
     mem_stage #(
-        .DM_BYTES(4096),
+        .DM_BYTES(1024),
         .DM_FILE(DMEM_FILE)
     ) u_mem (
         .clk(clk),

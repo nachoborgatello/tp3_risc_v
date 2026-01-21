@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 module mem_stage #(
-    parameter DM_BYTES = 4096,
+    parameter DM_BYTES = 1024,
     parameter DM_FILE  = ""
 )(
     input  wire        clk,

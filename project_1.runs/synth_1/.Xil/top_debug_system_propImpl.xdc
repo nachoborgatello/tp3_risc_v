@@ -3,6 +3,8 @@ set_property src_info {type:XDC file:1 line:7 export:INPUT save:INPUT read:READ}
 set_property -dict { PACKAGE_PIN W5 IOSTANDARD LVCMOS33 } [get_ports clk]
 set_property src_info {type:XDC file:1 line:67 export:INPUT save:INPUT read:READ} [current_design]
 set_property -dict { PACKAGE_PIN U18 IOSTANDARD LVCMOS33 } [get_ports reset]
+set_property src_info {type:XDC file:1 line:75 export:INPUT save:INPUT read:READ} [current_design]
+set_property -dict { PACKAGE_PIN J1   IOSTANDARD LVCMOS33 } [get_ports s_tick_out];#Sch name = JA1
 set_property src_info {type:XDC file:1 line:133 export:INPUT save:INPUT read:READ} [current_design]
 set_property -dict { PACKAGE_PIN B18   IOSTANDARD LVCMOS33 } [get_ports uart_rx]
 set_property src_info {type:XDC file:1 line:134 export:INPUT save:INPUT read:READ} [current_design]
