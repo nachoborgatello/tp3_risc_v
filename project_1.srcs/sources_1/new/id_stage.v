@@ -13,7 +13,7 @@ module id_stage (
     input  wire [4:0]  wb_rd,
     input  wire [31:0] wb_wd,
 
-    // Campos decodificados (útiles para EX)
+    // Campos decodificados
     output wire [6:0]  opcode,
     output wire [4:0]  rd,
     output wire [2:0]  funct3,
@@ -37,7 +37,11 @@ module id_stage (
     output wire        jump,
     output wire        jalr,
     output wire        wb_sel_pc4,
-    output wire [1:0]  alu_op
+    output wire [1:0]  alu_op,
+    
+    input  wire [4:0]  dbg_reg_addr,
+    output wire [31:0] dbg_reg_data
+
 );
 
     // ----------- Field Extractor -----------
@@ -48,8 +52,6 @@ module id_stage (
     assign rs2    = instr_in[24:20];
     assign funct7 = instr_in[31:25];
 
-    // ----------- Register File -----------
-    // 2 lecturas combinacionales + 1 escritura síncrona desde WB
     regfile u_rf (
         .clk   (clk),
         .reset (reset),
@@ -59,16 +61,16 @@ module id_stage (
         .rd    (wb_rd),
         .wd    (wb_wd),
         .rd1   (rs1_data),
-        .rd2   (rs2_data)
+        .rd2   (rs2_data),
+        .dbg_reg_addr(dbg_reg_addr),
+        .dbg_reg_data(dbg_reg_data)
     );
 
-    // ----------- Immediate Generator -----------
     imm_gen u_imm (
         .instr(instr_in),
         .imm  (imm)
     );
 
-    // ----------- Main Control Unit -----------
     control_unit u_ctrl (
         .opcode     (opcode),
         .reg_write  (reg_write),
@@ -83,7 +85,6 @@ module id_stage (
         .alu_op     (alu_op)
     );
     
-    // ----------- Program Counter -----------
     assign pc_out = pc_in;
     
 endmodule

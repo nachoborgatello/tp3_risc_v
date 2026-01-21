@@ -1,10 +1,11 @@
-`timescale 1ns / 1ps
+`timescale 1ns/1ps
 
 module tb_control_unit;
 
     reg  [6:0] opcode;
 
-    wire reg_write, mem_read, mem_write, mem_to_reg, alu_src, branch, jump, jalr;
+    wire reg_write, mem_read, mem_write, mem_to_reg, alu_src;
+    wire branch, jump, jalr, wb_sel_pc4;
     wire [1:0] alu_op;
 
     control_unit dut (
@@ -17,83 +18,105 @@ module tb_control_unit;
         .branch(branch),
         .jump(jump),
         .jalr(jalr),
+        .wb_sel_pc4(wb_sel_pc4),
         .alu_op(alu_op)
     );
 
-    // opcodes (mismos que en el DUT)
-    localparam [6:0] OP      = 7'b0110011;
-    localparam [6:0] OP_IMM  = 7'b0010011;
-    localparam [6:0] LOAD    = 7'b0000011;
-    localparam [6:0] STORE   = 7'b0100011;
-    localparam [6:0] BRANCH  = 7'b1100011;
-    localparam [6:0] JAL     = 7'b1101111;
-    localparam [6:0] JALR    = 7'b1100111;
-    localparam [6:0] LUI     = 7'b0110111;
-    localparam [6:0] AUIPC   = 7'b0010111;
-
-    task check(
-        input [6:0] op,
-        input exp_reg_write,
-        input exp_mem_read,
-        input exp_mem_write,
-        input exp_mem_to_reg,
-        input exp_alu_src,
-        input exp_branch,
-        input exp_jump,
-        input exp_jalr,
-        input [1:0] exp_alu_op,
-        input [127:0] name
-    );
-    begin
-        opcode = op;
-        #1;
-        if (reg_write!==exp_reg_write || mem_read!==exp_mem_read || mem_write!==exp_mem_write ||
-            mem_to_reg!==exp_mem_to_reg || alu_src!==exp_alu_src || branch!==exp_branch ||
-            jump!==exp_jump || jalr!==exp_jalr || alu_op!==exp_alu_op) begin
-
-            $display("ERROR %0s", name);
-            $display(" got: RW=%0d MR=%0d MW=%0d M2R=%0d AS=%0d BR=%0d JP=%0d JR=%0d ALUOp=%b",
-                      reg_write, mem_read, mem_write, mem_to_reg, alu_src, branch, jump, jalr, alu_op);
-            $display(" exp: RW=%0d MR=%0d MW=%0d M2R=%0d AS=%0d BR=%0d JP=%0d JR=%0d ALUOp=%b",
-                      exp_reg_write, exp_mem_read, exp_mem_write, exp_mem_to_reg, exp_alu_src,
-                      exp_branch, exp_jump, exp_jalr, exp_alu_op);
-        end else begin
-            $display("OK    %0s", name);
+    task expect;
+        input got;
+        input exp;
+        input [256*8-1:0] msg;
+        begin
+            if (got !== exp) begin
+                $display("[FAIL] %s | got=%b exp=%b", msg, got, exp);
+                $fatal;
+            end
         end
-    end
+    endtask
+
+    task expect2;
+        input [1:0] got;
+        input [1:0] exp;
+        input [256*8-1:0] msg;
+        begin
+            if (got !== exp) begin
+                $display("[FAIL] %s | got=%b exp=%b", msg, got, exp);
+                $fatal;
+            end
+        end
+    endtask
+
+    task check_defaults_zero;
+        begin
+            expect(reg_write,  0, "default reg_write");
+            expect(mem_read,   0, "default mem_read");
+            expect(mem_write,  0, "default mem_write");
+            expect(mem_to_reg, 0, "default mem_to_reg");
+            expect(alu_src,    0, "default alu_src");
+            expect(branch,     0, "default branch");
+            expect(jump,       0, "default jump");
+            expect(jalr,       0, "default jalr");
+            expect(wb_sel_pc4, 0, "default wb_sel_pc4");
+            expect2(alu_op, 2'b00, "default alu_op");
+        end
     endtask
 
     initial begin
-        // R-type
-        check(OP,     1,0,0,0,0,0,0,0, 2'b10, "R-type OP");
+        opcode = 7'h00; #1;
+        check_defaults_zero();
 
-        // I-type ALU
-        check(OP_IMM, 1,0,0,0,1,0,0,0, 2'b11, "I-type OP-IMM");
+        opcode = 7'b0110011; #1; // OP
+        expect(reg_write, 1, "OP reg_write");
+        expect(alu_src,   0, "OP alu_src");
+        expect2(alu_op, 2'b10, "OP alu_op");
 
-        // LOAD
-        check(LOAD,   1,1,0,1,1,0,0,0, 2'b00, "LOAD");
+        opcode = 7'b0010011; #1; // OP_IMM
+        expect(reg_write, 1, "OP_IMM reg_write");
+        expect(alu_src,   1, "OP_IMM alu_src");
+        expect2(alu_op, 2'b11, "OP_IMM alu_op");
 
-        // STORE
-        check(STORE,  0,0,1,0,1,0,0,0, 2'b00, "STORE");
+        opcode = 7'b0000011; #1; // LOAD
+        expect(reg_write,  1, "LOAD reg_write");
+        expect(mem_read,   1, "LOAD mem_read");
+        expect(mem_to_reg, 1, "LOAD mem_to_reg");
+        expect(alu_src,    1, "LOAD alu_src");
+        expect2(alu_op, 2'b00, "LOAD alu_op");
 
-        // BRANCH
-        check(BRANCH, 0,0,0,0,0,1,0,0, 2'b01, "BRANCH");
+        opcode = 7'b0100011; #1; // STORE
+        expect(mem_write, 1, "STORE mem_write");
+        expect(alu_src,   1, "STORE alu_src");
+        expect2(alu_op, 2'b00, "STORE alu_op");
 
-        // JAL
-        check(JAL,    1,0,0,0,0,0,1,0, 2'b00, "JAL");
+        opcode = 7'b1100011; #1; // BRANCH
+        expect(branch,  1, "BRANCH branch");
+        expect(alu_src, 0, "BRANCH alu_src");
+        expect2(alu_op, 2'b01, "BRANCH alu_op");
 
-        // JALR
-        check(JALR,   1,0,0,0,1,0,0,1, 2'b00, "JALR");
+        opcode = 7'b1101111; #1; // JAL
+        expect(reg_write,  1, "JAL reg_write");
+        expect(jump,       1, "JAL jump");
+        expect(wb_sel_pc4, 1, "JAL wb_sel_pc4");
 
-        // LUI
-        check(LUI,    1,0,0,0,1,0,0,0, 2'b00, "LUI");
+        opcode = 7'b1100111; #1; // JALR
+        expect(reg_write,  1, "JALR reg_write");
+        expect(jalr,       1, "JALR jalr");
+        expect(wb_sel_pc4, 1, "JALR wb_sel_pc4");
+        expect(alu_src,    1, "JALR alu_src");
+        expect2(alu_op, 2'b00, "JALR alu_op");
 
-        // AUIPC
-        check(AUIPC,  1,0,0,0,1,0,0,0, 2'b00, "AUIPC");
+        opcode = 7'b0110111; #1; // LUI
+        expect(reg_write, 1, "LUI reg_write");
+        expect(alu_src,   1, "LUI alu_src");
 
-        $display("Fin TB control_unit.");
-        $stop;
+        opcode = 7'b0010111; #1; // AUIPC
+        expect(reg_write, 1, "AUIPC reg_write");
+        expect(alu_src,   1, "AUIPC alu_src");
+        expect2(alu_op, 2'b00, "AUIPC alu_op");
+
+        $display("========================================");
+        $display("FIN: tb_control_unit OK");
+        $display("========================================");
+        $finish;
     end
 
 endmodule
-

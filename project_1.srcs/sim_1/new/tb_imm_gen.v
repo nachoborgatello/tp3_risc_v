@@ -10,46 +10,76 @@ module tb_imm_gen;
         .imm(imm)
     );
 
-    task check_imm(input [31:0] i, input [31:0] expected, input [127:0] name);
-    begin
-        instr = i;
-        #1;
-        if (imm !== expected) begin
-            $display("ERROR %0s: imm=%h esperado=%h instr=%h", name, imm, expected, instr);
-        end else begin
-            $display("OK    %0s: imm=%h", name, imm);
+    task expect32;
+        input [31:0] got;
+        input [31:0] exp;
+        input [256*8-1:0] msg;
+        begin
+            if (got !== exp) begin
+                $display("[FAIL] %s | got=%h exp=%h", msg, got, exp);
+                $fatal;
+            end else begin
+                $display("[ OK ] %s | %h", msg, got);
+            end
         end
-    end
     endtask
 
     initial begin
-        // ADDI x1,x0,5  => imm = 5
-        // encoding: imm[11:0]=5, rs1=0, funct3=000, rd=1, opcode=0010011
-        check_imm(32'h00500093, 32'd5, "ADDI x1,x0,5");
+        // I-type: opcode=0010011, imm=+5
+        instr = 32'b0;
+        instr[6:0]   = 7'b0010011;
+        instr[31:20] = 12'd5;
+        #1;
+        expect32(imm, 32'd5, "I-type imm=+5");
 
-        // LW x2,8(x0) => imm = 8
-        // imm=8, rs1=0, funct3=010, rd=2, opcode=0000011
-        check_imm(32'h00802103, 32'd8, "LW x2,8(x0)");
+        // I-type: imm=-1 (0xFFF)
+        instr = 32'b0;
+        instr[6:0]   = 7'b0000011; // LOAD también es I-type
+        instr[31:20] = 12'hFFF;
+        #1;
+        expect32(imm, 32'hFFFF_FFFF, "I-type imm=-1");
 
-        // SW x2,12(x0) => imm = 12
-        // imm=12 -> [11:5]=0, [4:0]=12, rs2=2, rs1=0, funct3=010, opcode=0100011
-        check_imm(32'h00202623, 32'd12, "SW x2,12(x0)");
+        // S-type: opcode=0100011, imm=+12
+        instr = 32'b0;
+        instr[6:0]   = 7'b0100011;
+        // imm[11:5]=0, imm[4:0]=12
+        instr[11:7]  = 5'd12;
+        instr[31:25] = 7'd0;
+        #1;
+        expect32(imm, 32'd12, "S-type imm=+12");
 
-        // BEQ x0,x0,+16 => imm = 16
-        // Para +16: imm[4:1]=1000, imm[10:5]=000000, imm[11]=0, imm[12]=0
-        // encoding result:
-        check_imm(32'h00000863, 32'd16, "BEQ x0,x0,+16");
+        // B-type: opcode=1100011, imm=+16
+        // +16 => 0b0000000010000 (bit0=0), imm[4:1]=1000, imm[11]=0, imm[12]=0, imm[10:5]=0
+        instr = 32'b0;
+        instr[6:0]   = 7'b1100011;
+        instr[11:8]  = 4'b1000; // imm[4:1]
+        instr[30:25] = 6'b000000;
+        instr[7]     = 1'b0;    // imm[11]
+        instr[31]    = 1'b0;    // imm[12]
+        #1;
+        expect32(imm, 32'd16, "B-type imm=+16");
 
-        // LUI x3,0x12345 => imm = 0x12345000
-        // instr = 0x12345 << 12 | rd=3 | opcode=0110111
-        check_imm(32'h123451B7, 32'h12345000, "LUI x3,0x12345");
+        // U-type: LUI, imm=0x12345000
+        instr = 32'b0;
+        instr[6:0]   = 7'b0110111;
+        instr[31:12] = 20'h12345;
+        #1;
+        expect32(imm, 32'h1234_5000, "U-type imm");
 
-        // JAL x0,+32 => imm = 32
-        // encoding para +32 (bit0=0):
-        check_imm(32'h0200006F, 32'd32, "JAL x0,+32");
+        // J-type: opcode=1101111, imm=+2048 (0x800)
+        instr = 32'b0;
+        instr[6:0]   = 7'b1101111;
+        instr[31]    = 1'b0;    // imm[20]
+        instr[19:12] = 8'b0;    // imm[19:12]
+        instr[20]    = 1'b1;    // imm[11] = 1  => 0x800
+        instr[30:21] = 10'b0;   // imm[10:1]
+        #1;
+        expect32(imm, 32'd2048, "J-type imm=+2048");
 
-        $display("Fin TB imm_gen.");
-        $stop;
+        $display("========================================");
+        $display("FIN: tb_imm_gen OK");
+        $display("========================================");
+        $finish;
     end
 
 endmodule

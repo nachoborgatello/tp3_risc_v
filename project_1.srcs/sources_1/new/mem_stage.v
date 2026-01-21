@@ -17,7 +17,10 @@ module mem_stage #(
 
     // Outputs hacia MEM/WB
     output wire [31:0] mem_read_data, // dato leído (ya extendido)
-    output wire [31:0] alu_result_out // passthrough
+    output wire [31:0] alu_result_out, // passthrough
+    
+    input  wire [11:0] dbg_byte_addr,
+    output wire [7:0]  dbg_byte_data
 );
 
     // Memoria de datos completa RV32
@@ -31,7 +34,9 @@ module mem_stage #(
         .funct3     (funct3),
         .addr       (alu_result_in),
         .write_data (write_data),
-        .read_data  (mem_read_data)
+        .read_data  (mem_read_data),
+        .dbg_byte_addr(dbg_byte_addr),
+        .dbg_byte_data(dbg_byte_data)
     );
 
     // Passthrough del resultado de la ALU

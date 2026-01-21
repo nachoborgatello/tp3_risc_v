@@ -10,7 +10,11 @@ module dmem_rv32 #(
     input  wire [2:0]  funct3,
     input  wire [31:0] addr,
     input  wire [31:0] write_data,
-    output wire [31:0] read_data
+    output wire [31:0] read_data,
+    
+    input  wire [11:0] dbg_byte_addr,
+    output wire [7:0]  dbg_byte_data
+
 );
 
     // Memoria de bytes
@@ -103,5 +107,7 @@ module dmem_rv32 #(
             endcase
         end
     end
+    
+    assign dbg_byte_data = mem[dbg_byte_addr];
 
 endmodule

@@ -12,6 +12,7 @@ module id_ex_reg (
     input  wire [31:0] rs1_data_in,
     input  wire [31:0] rs2_data_in,
     input  wire [31:0] imm_in,
+    input  wire valid_in,
 
     input  wire [4:0]  rs1_in,
     input  wire [4:0]  rs2_in,
@@ -60,7 +61,9 @@ module id_ex_reg (
 
     output reg         jump_out,
     output reg         jalr_out,
+    output reg         valid_out,
     output reg         wb_sel_pc4_out
+    
 );
 
     // Helper: burbuja = controles en 0, datos opcionalmente 0
@@ -93,6 +96,7 @@ module id_ex_reg (
         jump_out      <= 1'b0;
         jalr_out      <= 1'b0;
         wb_sel_pc4_out      <= 1'b0;
+        valid_out <= 1'b0;
     end
     endtask
 
@@ -129,9 +133,9 @@ module id_ex_reg (
             jump_out       <= jump_in;
             jalr_out       <= jalr_in;
             wb_sel_pc4_out <= wb_sel_pc4_in;
+            valid_out <= valid_in;
         end
         // else write_en=0 => stall (mantener)
     end
 
 endmodule
-

@@ -11,7 +11,11 @@ module regfile #(
     input  wire [4:0]       rd,         // write addr
     input  wire [XLEN-1:0]  wd,         // write data
     output wire [XLEN-1:0]  rd1,        // read data 1
-    output wire [XLEN-1:0]  rd2         // read data 2
+    output wire [XLEN-1:0]  rd2,        // read data 2
+    
+    input  wire [4:0]  dbg_reg_addr,
+    output wire [31:0] dbg_reg_data
+
 );
 
     reg [XLEN-1:0] regs [0:31];
@@ -43,5 +47,7 @@ module regfile #(
     
     assign rd2 = (rs2 == 5'd0) ? {XLEN{1'b0}} :
                  (we && (rd == rs2) && (rd != 5'd0)) ? wd : regs[rs2];
+                 
+    assign dbg_reg_data = regs[dbg_reg_addr];
 
 endmodule

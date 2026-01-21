@@ -17,6 +17,7 @@ module mem_wb_reg (
     
     input  wire [31:0] pc_plus4_in,
     input  wire        wb_sel_pc4_in,
+    input  wire valid_in,
 
     // -------- DATA hacia WB --------
     output reg  [31:0] mem_read_data_out,
@@ -28,7 +29,8 @@ module mem_wb_reg (
     output reg         mem_to_reg_out,
     
     output reg  [31:0] pc_plus4_out,
-    output reg         wb_sel_pc4_out
+    output reg         wb_sel_pc4_out,
+    output reg  valid_out
 );
 
     task automatic bubble;
@@ -41,6 +43,7 @@ module mem_wb_reg (
         reg_write_out     <= 1'b0;
         mem_to_reg_out    <= 1'b0;
         wb_sel_pc4_out      <= 1'b0;
+        valid_out <= 1'b0;
     end
     endtask
 
@@ -58,6 +61,7 @@ module mem_wb_reg (
             reg_write_out     <= reg_write_in;
             mem_to_reg_out    <= mem_to_reg_in;
             wb_sel_pc4_out    <= wb_sel_pc4_in;
+            valid_out <= valid_in;
         end
         // else: stall -> mantener
     end

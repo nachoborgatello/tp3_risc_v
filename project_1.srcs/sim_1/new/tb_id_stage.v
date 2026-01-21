@@ -22,12 +22,13 @@ module tb_id_stage;
 
     wire [31:0] rs1_data, rs2_data, imm;
 
-    wire        reg_write, mem_read, mem_write, mem_to_reg, alu_src, branch, jump, jalr;
+    wire        reg_write, mem_read, mem_write, mem_to_reg, alu_src, branch, jump, jalr, wb_sel_pc4;
     wire [1:0]  alu_op;
 
     id_stage dut (
         .clk(clk),
         .reset(reset),
+
         .pc_in(pc_in),
         .instr_in(instr_in),
 
@@ -45,6 +46,7 @@ module tb_id_stage;
         .rs1_data(rs1_data),
         .rs2_data(rs2_data),
         .imm(imm),
+        .pc_out(pc_out),
 
         .reg_write(reg_write),
         .mem_read(mem_read),
@@ -54,6 +56,7 @@ module tb_id_stage;
         .branch(branch),
         .jump(jump),
         .jalr(jalr),
+        .wb_sel_pc4(wb_sel_pc4),
         .alu_op(alu_op)
     );
 

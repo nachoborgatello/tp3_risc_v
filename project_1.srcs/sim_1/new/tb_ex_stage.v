@@ -146,7 +146,7 @@ module tb_ex_stage;
         settle();
         check1(branch_taken_out, 1'b0, "BNE not taken");
 
-        $display("Fin TB EX stage (robusto).");
+        $display("Fin TB EX stage.");
         $stop;
     end
 

@@ -2,14 +2,17 @@
 
 module tb_dmem_rv32;
 
+    localparam BYTES = 256;
+
     reg clk;
     reg mem_read, mem_write;
     reg [2:0] funct3;
-    reg [31:0] addr, write_data;
+    reg [31:0] addr;
+    reg [31:0] write_data;
     wire [31:0] read_data;
 
     dmem_rv32 #(
-        .BYTES(256),
+        .BYTES(BYTES),
         .MEM_FILE("")
     ) dut (
         .clk(clk),
@@ -21,96 +24,99 @@ module tb_dmem_rv32;
         .read_data(read_data)
     );
 
-    // Clock 100MHz
     initial clk = 0;
     always #5 clk = ~clk;
 
-    // settle para combinacional
-    task settle; begin #2; end endtask
-
-    task check32(input [31:0] got, input [31:0] exp, input [127:0] name);
-    begin
-        if (got !== exp) $display("ERROR %0s: got=%h exp=%h", name, got, exp);
-        else            $display("OK    %0s", name);
-    end
+    task expect32;
+        input [31:0] got;
+        input [31:0] exp;
+        input [256*8-1:0] msg;
+        begin
+            if (got !== exp) begin
+                $display("[FAIL] %s | got=%h exp=%h (t=%0t)", msg, got, exp, $time);
+                $fatal;
+            end else begin
+                $display("[ OK ] %s | %h (t=%0t)", msg, got, $time);
+            end
+        end
     endtask
 
-    // Write helpers (se escriben en posedge)
-    task do_store(input [2:0] f3, input [31:0] a, input [31:0] wd);
-    begin
-        @(negedge clk);
-        mem_read  = 0;
-        mem_write = 1;
-        funct3    = f3;
-        addr      = a;
-        write_data= wd;
-        @(posedge clk);
-        @(negedge clk);
-        mem_write = 0;
-    end
+    task do_store;
+        input [2:0]  f3;
+        input [31:0] a;
+        input [31:0] wd;
+        begin
+            @(negedge clk);
+            funct3    = f3;
+            addr      = a;
+            write_data= wd;
+            mem_write = 1'b1;
+            mem_read  = 1'b0;
+            @(posedge clk);
+            #1;
+            mem_write = 1'b0;
+        end
     endtask
 
-    // Read helpers (combinacional)
-    task do_load_check(input [2:0] f3, input [31:0] a, input [31:0] exp, input [127:0] name);
-    begin
-        mem_write = 0;
-        mem_read  = 1;
-        funct3    = f3;
-        addr      = a;
-        settle();
-        check32(read_data, exp, name);
-        mem_read  = 0;
-    end
+    task do_load_expect;
+        input [2:0]  f3;
+        input [31:0] a;
+        input [31:0] exp;
+        input [256*8-1:0] msg;
+        begin
+            funct3   = f3;
+            addr     = a;
+            mem_read = 1'b1;
+            mem_write= 1'b0;
+            #1;
+            expect32(read_data, exp, msg);
+            mem_read = 1'b0;
+        end
     endtask
 
     initial begin
-        // init
         mem_read = 0;
         mem_write = 0;
-        funct3 = 3'b000;
+        funct3 = 3'b010;
         addr = 0;
         write_data = 0;
 
-        // -------------------------
-        // 1) SB y luego LB/LBU
-        // guardo 0x80 en addr 0x10
-        do_store(3'b000, 32'h0000_0010, 32'h0000_0080); // SB (write_data[7:0]=0x80)
+        // 1) SW + LW (little-endian)
+        do_store(3'b010, 32'h0000_0010, 32'hA1B2_C3D4); // SW
+        do_load_expect(3'b010, 32'h0000_0010, 32'hA1B2_C3D4, "LW @0x10 == A1B2C3D4");
 
-        // LB debe sign-extend: 0xFFFFFF80
-        do_load_check(3'b000, 32'h0000_0010, 32'hFFFF_FF80, "LB sign-extend 0x80");
+        // Verificar bytes individuales en offsets (D4 C3 B2 A1)
+        do_load_expect(3'b100, 32'h0000_0010, 32'h0000_00D4, "LBU @0x10 == D4");
+        do_load_expect(3'b100, 32'h0000_0011, 32'h0000_00C3, "LBU @0x11 == C3");
+        do_load_expect(3'b100, 32'h0000_0012, 32'h0000_00B2, "LBU @0x12 == B2");
+        do_load_expect(3'b100, 32'h0000_0013, 32'h0000_00A1, "LBU @0x13 == A1");
 
-        // LBU debe zero-extend: 0x00000080
-        do_load_check(3'b100, 32'h0000_0010, 32'h0000_0080, "LBU zero-extend 0x80");
+        // 2) LB vs LBU (sign extend)
+        do_store(3'b000, 32'h0000_0020, 32'h0000_0080); // SB 0x80
+        do_load_expect(3'b000, 32'h0000_0020, 32'hFFFF_FF80, "LB  @0x20 sign-extends 0x80");
+        do_load_expect(3'b100, 32'h0000_0020, 32'h0000_0080, "LBU @0x20 zero-extends 0x80");
 
-        // -------------------------
-        // 2) SH y luego LH/LHU
-        // guardo 0x8001 en addr 0x20 (alineada a 2)
-        do_store(3'b001, 32'h0000_0020, 32'h0000_8001); // SH
+        // 3) SH + LH/LHU offset 0
+        do_store(3'b001, 32'h0000_0030, 32'h0000_8001); // SH -> bytes: 01 80
+        do_load_expect(3'b001, 32'h0000_0030, 32'hFFFF_8001, "LH  @0x30 sign-extends 0x8001");
+        do_load_expect(3'b101, 32'h0000_0030, 32'h0000_8001, "LHU @0x30 zero-extends 0x8001");
 
-        // LH sign-extend: 0xFFFF8001
-        do_load_check(3'b001, 32'h0000_0020, 32'hFFFF_8001, "LH sign-extend 0x8001");
+        // 4) SH offset 2 dentro de la misma word alineada
+        do_store(3'b001, 32'h0000_0042, 32'h0000_7FEE); // SH @0x42 -> EE 7F
+        do_load_expect(3'b101, 32'h0000_0042, 32'h0000_7FEE, "LHU @0x42 == 0x7FEE");
+        do_load_expect(3'b001, 32'h0000_0042, 32'h0000_7FEE, "LH  @0x42 == 0x7FEE");
 
-        // LHU zero-extend: 0x00008001
-        do_load_check(3'b101, 32'h0000_0020, 32'h0000_8001, "LHU zero-extend 0x8001");
+        // 5) Lectura deshabilitada => 0
+        funct3   = 3'b010;
+        addr     = 32'h0000_0010;
+        mem_read = 1'b0;
+        #1;
+        expect32(read_data, 32'h0000_0000, "mem_read=0 => read_data=0");
 
-        // -------------------------
-        // 3) SW y luego LW
-        // guardo palabra completa en addr 0x40 (alineada a 4)
-        do_store(3'b010, 32'h0000_0040, 32'hDEAD_BEEF); // SW
-        do_load_check(3'b010, 32'h0000_0040, 32'hDEAD_BEEF, "LW after SW");
-
-        // -------------------------
-        // 4) Prueba de offsets dentro de la palabra (LB en +1, +2, +3)
-        // escribo 0x11223344 en 0x50 y leo bytes
-        do_store(3'b010, 32'h0000_0050, 32'h1122_3344); // SW
-        // little-endian: mem[0x50]=44, [0x51]=33, [0x52]=22, [0x53]=11
-        do_load_check(3'b100, 32'h0000_0050, 32'h0000_0044, "LBU byte0");
-        do_load_check(3'b100, 32'h0000_0051, 32'h0000_0033, "LBU byte1");
-        do_load_check(3'b100, 32'h0000_0052, 32'h0000_0022, "LBU byte2");
-        do_load_check(3'b100, 32'h0000_0053, 32'h0000_0011, "LBU byte3");
-
-        $display("Fin TB dmem_rv32.");
-        $stop;
+        $display("========================================");
+        $display("FIN: tb_dmem_rv32 OK");
+        $display("========================================");
+        $finish;
     end
 
 endmodule
