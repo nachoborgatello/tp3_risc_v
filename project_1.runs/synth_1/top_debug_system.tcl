@@ -57,14 +57,18 @@ if {$::dispatch::connected} {
 
 OPTRACE "synth_1" START { ROLLUP_AUTO }
 set_param general.usePosixSpawnForFork 1
+set_param chipscope.maxJobs 2
+set_msg_config -id {Common 17-41} -limit 10000000
 OPTRACE "Creating in-memory project" START { }
 create_project -in_memory -part xc7a35tcpg236-1
 
 set_param project.singleFileAddWarning.threshold 0
 set_param project.compositeFile.enableAutoGeneration 0
 set_param synth.vivado.isSynthRun true
+set_msg_config -source 4 -id {IP_Flow 19-2162} -severity warning -new_severity info
 set_property webtalk.parent_dir C:/Users/ignac/Downloads/project_1/project_1.cache/wt [current_project]
 set_property parent.project_path C:/Users/ignac/Downloads/project_1/project_1.xpr [current_project]
+set_property XPM_LIBRARIES XPM_CDC [current_project]
 set_property default_lib xil_defaultlib [current_project]
 set_property target_language Verilog [current_project]
 set_property board_part digilentinc.com:basys3:part0:1.2 [current_project]
@@ -99,6 +103,11 @@ read_verilog -library xil_defaultlib {
   C:/Users/ignac/Downloads/project_1/project_1.srcs/sources_1/new/wb_stage.v
   C:/Users/ignac/Downloads/project_1/project_1.srcs/sources_1/new/top_debug_system.v
 }
+read_ip -quiet c:/Users/ignac/Downloads/project_1/project_1.srcs/sources_1/ip/clk_wiz_50m/clk_wiz_50m.xci
+set_property used_in_implementation false [get_files -all c:/Users/ignac/Downloads/project_1/project_1.gen/sources_1/ip/clk_wiz_50m/clk_wiz_50m_board.xdc]
+set_property used_in_implementation false [get_files -all c:/Users/ignac/Downloads/project_1/project_1.gen/sources_1/ip/clk_wiz_50m/clk_wiz_50m.xdc]
+set_property used_in_implementation false [get_files -all c:/Users/ignac/Downloads/project_1/project_1.gen/sources_1/ip/clk_wiz_50m/clk_wiz_50m_ooc.xdc]
+
 OPTRACE "Adding files" END { }
 # Mark all dcp files as not used in implementation to prevent them from being
 # stitched into the results of this synthesis run. Any black boxes in the

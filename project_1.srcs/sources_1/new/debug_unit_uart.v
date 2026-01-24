@@ -216,16 +216,20 @@ module debug_unit_uart #(
                 end
 
                 ST_STEP: begin
-                    dbg_freeze <= 1'b0;
-                    dbg_step   <= 1'b1;         // pulso 1 ciclo al CPU
-                    state      <= ST_STEP_WAIT; // esperamos 1 ciclo para que el avance se "registre"
+                    // STEP = 1 ciclo de clock-enable
+                    dbg_freeze <= 1'b0;   // dejar correr
+                    dbg_step   <= 1'b1;   // pulso 1 ciclo
+                    dbg_drain  <= 1'b0;   // IMPORTANTE: no drenar
+                    state      <= ST_STEP_WAIT;
                 end
 
                 ST_STEP_WAIT: begin
-                    // dejamos correr 1 ciclo más y drenamos
-                    dbg_freeze <= 1'b0;
-                    dbg_drain  <= 1'b1;
-                    state      <= ST_DRAIN;
+                    // En este ciclo ya bajó dbg_step (por default pulse).
+                    // Ahora frenamos y dumpeamos el estado del pipeline "tal cual quedó".
+                    dbg_freeze <= 1'b1;   // congelar CPU
+                    dbg_drain  <= 1'b0;   // no drenar
+                    dump_type  <= 8'd1;   // STEP
+                    state      <= ST_DUMP;
                 end
 
                 ST_DUMP: begin

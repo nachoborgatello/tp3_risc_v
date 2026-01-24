@@ -97,6 +97,7 @@ proc step_failed { step } {
 OPTRACE "impl_1" END { }
 }
 
+set_msg_config -id {Common 17-41} -limit 10000000
 
 OPTRACE "impl_1" START { ROLLUP_1 }
 OPTRACE "Phase: Write Bitstream" START { ROLLUP_AUTO }
@@ -113,6 +114,7 @@ set rc [catch {
 set_property TOP top_debug_system [current_fileset]
 OPTRACE "read constraints: write_bitstream" START { }
 OPTRACE "read constraints: write_bitstream" END { }
+  set_property XPM_LIBRARIES XPM_CDC [current_project]
   catch { write_mem_info -force -no_partial_mmi top_debug_system.mmi }
 OPTRACE "write_bitstream setup" END { }
 OPTRACE "write_bitstream" START { }

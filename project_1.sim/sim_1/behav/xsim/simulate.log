@@ -111,7 +111,39 @@ Time resolution is 1 ps
 [ OK ]                                                                                                                                                                                                                                                           REG x3 | 00008001 (t=26741215000)
 [ OK ]                                                                                                                                                                                                                                                     DMEM[0] byte | 01 (t=26741215000)
 [ OK ]                                                                                                                                                                                                                                                     DMEM[1] byte | 80 (t=26741215000)
+=== TEST STEP: 1 ciclo CE + dump inmediato ===
+[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=27923475000)
+[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=27928335000)
+[ OK ]                                                                                                                                                                                                                                                   DUMP type STEP | 01 (t=27934815000)
+[INFO] STEP flags=00 pc=00000004 (t=27934815000)
+[ OK ] STEP: pipe_dump tiene actividad (t=28394895000)
+[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=28398045000)
+[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=28402905000)
+[ OK ]                                                                                                                                                                                                                                                   DUMP type STEP | 01 (t=28409385000)
+[INFO] STEP flags=00 pc=00000008 (t=28409385000)
+[ OK ] STEP: pipe_dump cambió entre steps (t=28869465000)
+[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=28872615000)
+[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=28877475000)
+[ OK ]                                                                                                                                                                                                                                                   DUMP type STEP | 01 (t=28883955000)
+[INFO] STEP flags=00 pc=0000000c (t=28883955000)
+[ OK ] STEP: pipe_dump cambió entre steps (t=29344035000)
+[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=29347185000)
+[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=29352045000)
+[ OK ]                                                                                                                                                                                                                                                   DUMP type STEP | 01 (t=29358525000)
+[INFO] STEP flags=00 pc=00000010 (t=29358525000)
+[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=29821755000)
+[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=29826615000)
+[ OK ]                                                                                                                                                                                                                                                   DUMP type STEP | 01 (t=29833095000)
+[INFO] STEP flags=00 pc=00000014 (t=29833095000)
+[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=30296325000)
+[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=30301185000)
+[ OK ]                                                                                                                                                                                                                                                   DUMP type STEP | 01 (t=30307665000)
+[INFO] STEP flags=01 pc=00000018 (t=30307665000)
+[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=30770875000)
+[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=30775735000)
+[ OK ]                                                                                                                                                                                                                                                 DUMP type MANUAL | 03 (t=30782215000)
+[INFO] After steps: x1=00000005 x2=00000007 x3=00008001 x4=00000002
 ========================================
 FIN: tb_top_debug_system EXTENDED OK
 ========================================
-$finish called at time : 26741215 ns : File "C:/Users/ignac/Downloads/project_1/project_1.srcs/sim_1/new/tb_top_debug_serial.v" Line 572
+$finish called at time : 31242295 ns : File "C:/Users/ignac/Downloads/project_1/project_1.srcs/sim_1/new/tb_top_debug_serial.v" Line 674

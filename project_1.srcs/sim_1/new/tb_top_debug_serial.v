@@ -264,6 +264,71 @@ module tb_top_debug_system;
             recv_dump_payload_parse();
         end
     endtask
+    
+        // ------------------------------------------------------------
+    // NUEVO: STEP (1 ciclo CE) + dump inmediato (sin drain)
+    // ------------------------------------------------------------
+    task step_and_capture_dump;
+        begin
+            host_send_byte("S");
+            recv_dump_header(type, flags, pc_le);
+            expect8(type, 8'd1, "DUMP type STEP");
+
+            // Ahora NO esperamos pipe_empty=1.
+            // De hecho, normalmente pipe_empty va a ser 0 al inicio (pipeline activo).
+            $display("[INFO] STEP flags=%02h pc=%08h (t=%0t)", flags, pc_le, $time);
+
+            recv_dump_payload_parse();
+        end
+    endtask
+
+    // NUEVO: asserts suaves para STEP (sin asumir packing)
+    task expect_pipe_not_all_zero;
+        integer k;
+        reg any_nonzero;
+        begin
+            any_nonzero = 1'b0;
+            for (k = 0; k < PIPE_WORDS; k = k + 1) begin
+                if (pipe_dump[k] !== 32'h0000_0000) any_nonzero = 1'b1;
+            end
+            if (!any_nonzero) begin
+                $display("[FAIL] STEP: pipe_dump parece todo cero (no se ve avance) (t=%0t)", $time);
+                $fatal;
+            end else begin
+                $display("[ OK ] STEP: pipe_dump tiene actividad (t=%0t)", $time);
+            end
+        end
+    endtask
+
+    // NUEVO: comparar dos snapshots del pipe
+    reg [31:0] pipe_prev [0:PIPE_WORDS-1];
+
+    task save_pipe_snapshot;
+        integer k;
+        begin
+            for (k = 0; k < PIPE_WORDS; k = k + 1) begin
+                pipe_prev[k] = pipe_dump[k];
+            end
+        end
+    endtask
+
+    task expect_pipe_changed_since_last;
+        integer k;
+        reg changed;
+        begin
+            changed = 1'b0;
+            for (k = 0; k < PIPE_WORDS; k = k + 1) begin
+                if (pipe_dump[k] !== pipe_prev[k]) changed = 1'b1;
+            end
+            if (!changed) begin
+                $display("[FAIL] STEP: pipe_dump NO cambió entre steps (t=%0t)", $time);
+                $fatal;
+            end else begin
+                $display("[ OK ] STEP: pipe_dump cambió entre steps (t=%0t)", $time);
+            end
+        end
+    endtask
+
 
     // ============================================================
     // NUEVO: limpiar IMEM con NOPs para evitar "basura" de tests previos
@@ -565,6 +630,43 @@ module tb_top_debug_system;
         expect_reg(3, 32'h0000_8001);
         expect_mem8(0, 8'h01);
         expect_mem8(1, 8'h80);
+        
+                // ========================================================
+        // NUEVO: TEST STEP (1 ciclo CE + dump sin drain)
+        // ========================================================
+        $display("=== TEST STEP: 1 ciclo CE + dump inmediato ===");
+        prepare_test(0);
+        load_prog_alu_basic();
+        reset_fetch();
+
+        // Step #1: debería empezar a llenar pipeline
+        step_and_capture_dump();
+        expect_pipe_not_all_zero();
+        save_pipe_snapshot();
+
+        // Step #2: debería cambiar el contenido del pipe
+        step_and_capture_dump();
+        expect_pipe_changed_since_last();
+        save_pipe_snapshot();
+
+        // Step #3: sigue cambiando
+        step_and_capture_dump();
+        expect_pipe_changed_since_last();
+        save_pipe_snapshot();
+
+        // opcional: luego de varios steps, recién ahí deberían empezar a cambiar registros
+        // (porque WB tarda varios ciclos)
+        step_and_capture_dump();
+        step_and_capture_dump();
+        step_and_capture_dump();
+
+        // Podés hacer un dump manual para mirar regs si querés
+        host_send_byte("D");
+        recv_dump_header(type, flags, pc_le);
+        expect8(type, 8'd3, "DUMP type MANUAL");
+        recv_dump_payload_parse();
+        $display("[INFO] After steps: x1=%08h x2=%08h x3=%08h x4=%08h",
+                 regs_dump[1], regs_dump[2], regs_dump[3], regs_dump[4]);
 
         $display("========================================");
         $display("FIN: tb_top_debug_system EXTENDED OK");

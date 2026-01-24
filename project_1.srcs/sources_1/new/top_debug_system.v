@@ -2,20 +2,36 @@
 `default_nettype none
 
 module top_debug_system #(
-    parameter integer CLK_HZ = 100_000_000,
+    // Ahora el sistema corre a 50 MHz (clock generado)
+    parameter integer CLK_HZ = 50_000_000,
     parameter integer BAUD   = 115200,
 
     // CPU params
     parameter IMEM_FILE = "",
     parameter DMEM_FILE = ""
 )(
-    input  wire clk,
-    input  wire reset,
+    input  wire clk,        // clock físico: 100 MHz (Basys3)
+    input  wire reset,      // reset externo (activo alto)
 
     input  wire uart_rx,
     output wire uart_tx,
     output wire s_tick_out
 );
+
+    // 0) Clock Wizard: 100 MHz -> 50 MHz
+    wire clk_sys;        // 50 MHz
+    wire clk_locked;
+
+    // IP Clocking Wizard (ajustá el nombre si tu IP no es clk_wiz_0)
+    clk_wiz_50m u_clk_wiz (
+        .clk_in1 (clk),        // 100 MHz
+        .reset   (reset),      // reset del MMCM (activo alto)
+        .clk_out1(clk_sys),    // 50 MHz
+        .locked  (clk_locked)
+    );
+
+    // Reset del sistema: mantenemos el sistema en reset hasta que el MMCM esté lockeado
+    wire reset_sys = reset | ~clk_locked;
 
     // Debug read ports (stream)
     wire [4:0]  rf_dbg_addr;
@@ -26,9 +42,7 @@ module top_debug_system #(
     // NUEVO: pipeline latches flat
     wire [23*32-1:0] dbg_pipe_flat;
 
-    // ============================================================
-    // 1) Baud tick para oversampling 16x
-    // ============================================================
+    // 1) Baud tick para oversampling 16x (ahora con CLK_HZ=50MHz)
     localparam integer TICK_HZ = BAUD * 16;
     localparam integer M_TICK  = (CLK_HZ / TICK_HZ);
 
@@ -51,15 +65,13 @@ module top_debug_system #(
         .N(N_TICK),
         .M(M_TICK)
     ) u_baud_tick (
-        .clk(clk),
-        .reset(reset),
+        .clk(clk_sys),
+        .reset(reset_sys),
         .max_tick(s_tick),
         .q(q_tick)
     );
 
-    // ============================================================
     // 2) UART RX/TX
-    // ============================================================
     wire       rx_done_tick;
     wire [7:0] rx_dout;
 
@@ -67,8 +79,8 @@ module top_debug_system #(
         .DBIT(8),
         .SB_TICK(16)
     ) u_uart_rx (
-        .clk(clk),
-        .reset(reset),
+        .clk(clk_sys),
+        .reset(reset_sys),
         .rx(uart_rx),
         .s_tick(s_tick),
         .rx_done_tick(rx_done_tick),
@@ -83,8 +95,8 @@ module top_debug_system #(
         .DBIT(8),
         .SB_TICK(16)
     ) u_uart_tx (
-        .clk(clk),
-        .reset(reset),
+        .clk(clk_sys),
+        .reset(reset_sys),
         .tx_start(tx_start),
         .s_tick(s_tick),
         .din(tx_din),
@@ -92,9 +104,7 @@ module top_debug_system #(
         .tx(uart_tx)
     );
 
-    // ============================================================
     // 3) Señales DEBUG <-> CPU
-    // ============================================================
     wire        dbg_freeze;
     wire        dbg_run;
     wire        dbg_step;
@@ -112,12 +122,10 @@ module top_debug_system #(
     wire        dbg_pipe_empty;
     wire        dbg_halt_seen;
 
-    // ============================================================
-    // 4) Debug Unit (stream por puertos)
-    // ============================================================
+    // 4) Debug Unit
     debug_unit_uart u_dbg (
-        .clk(clk),
-        .reset(reset),
+        .clk(clk_sys),
+        .reset(reset_sys),
 
         .rx_done_tick(rx_done_tick),
         .rx_dout(rx_dout),
@@ -129,7 +137,7 @@ module top_debug_system #(
         .dbg_pc(dbg_pc),
         .dbg_pipe_empty(dbg_pipe_empty),
         .dbg_halt_seen(dbg_halt_seen),
-        .dbg_pipe_flat(dbg_pipe_flat),   // <<< NUEVO
+        .dbg_pipe_flat(dbg_pipe_flat),
 
         .dbg_freeze(dbg_freeze),
         .dbg_run(dbg_run),
@@ -150,15 +158,13 @@ module top_debug_system #(
         .dmem_dbg_data(dmem_dbg_data)
     );
 
-    // ============================================================
     // 5) CPU TOP
-    // ============================================================
     cpu_top #(
       .IMEM_FILE(IMEM_FILE),
       .DMEM_FILE(DMEM_FILE)
     ) u_cpu (
-      .clk(clk),
-      .reset(reset),
+      .clk(clk_sys),
+      .reset(reset_sys),
 
       .dbg_freeze(dbg_freeze),
       .dbg_flush_pipe(dbg_flush_pipe),
@@ -178,7 +184,7 @@ module top_debug_system #(
 
       .dbg_pc(dbg_pc),
 
-      .dbg_pipe_flat(dbg_pipe_flat),  // <<< NUEVO
+      .dbg_pipe_flat(dbg_pipe_flat),
 
       .rf_dbg_addr(rf_dbg_addr),
       .rf_dbg_data(rf_dbg_data),
