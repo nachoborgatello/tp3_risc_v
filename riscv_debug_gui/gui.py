@@ -8,6 +8,7 @@ import serial
 import serial.tools.list_ports
 
 MAGIC = 0xD0
+PIPE_WORDS = 23  # debe coincidir con cpu_top (dbg_pipe_flat)
 
 def u32_le(x: int) -> bytes:
     return struct.pack("<I", x & 0xFFFFFFFF)
@@ -54,6 +55,7 @@ def parse_program_file(path: str) -> list[tuple[int, int]]:
       - Una palabra hex por línea: 00000013 / 0x00000013
       - Con marcador de dirección estilo readmemh: @00000040
         (la dirección es en BYTES; si está en words, igual te funciona si vos la ponés ya *4)
+      - ADDR:DATA
     """
     items: list[tuple[int, int]] = []
     base = 0  # addr byte actual
@@ -63,15 +65,11 @@ def parse_program_file(path: str) -> list[tuple[int, int]]:
             if not s:
                 continue
 
-            # Marcador de dirección: @ADDR
             if s.startswith("@"):
                 addr_s = s[1:].strip()
                 base = int(addr_s, 16) if addr_s.lower().startswith("0x") is False else int(addr_s, 0)
-                # si te pasan en words y querés bytes, descomentá:
-                # base = base * 4
                 continue
 
-            # También permito "ADDR:DATA"
             if ":" in s:
                 a_s, d_s = s.split(":", 1)
                 a_s = a_s.strip()
@@ -81,17 +79,162 @@ def parse_program_file(path: str) -> list[tuple[int, int]]:
                 items.append((addr & 0xFFFFFFFF, word & 0xFFFFFFFF))
                 continue
 
-            # Caso normal: word suelta => va en base, base+=4
             word = int(s, 0) if s.lower().startswith("0x") else int(s, 16)
             items.append((base & 0xFFFFFFFF, word & 0xFFFFFFFF))
             base = (base + 4) & 0xFFFFFFFF
 
     return items
 
+def _signed32(x: int) -> int:
+    x &= 0xFFFFFFFF
+    return x if x < 0x80000000 else x - 0x100000000
+
+def decode_pipe_words(pw: list[int]) -> dict:
+    """
+    Decodifica el layout definido en cpu_top:
+      w0  pc_ifid
+      w1  pc_plus4_ifid
+      w2  instr_ifid
+      w3  {valid_ifid}
+      w4  pc_idex
+      w5  pc_plus4_idex
+      w6  rs1_data_idex
+      w7  rs2_data_idex
+      w8  imm_idex
+      w9  {funct7,funct3,rs2,rs1,rd,7'b0}
+      w10 control_idex bits
+      w11 alu_result_exmem
+      w12 rs2_pass_exmem
+      w13 branch_target_exmem
+      w14 pc_plus4_exmem
+      w15 {funct3,rd}
+      w16 control_exmem bits
+      w17 mem_read_data_mwb
+      w18 alu_result_mwb
+      w19 pc_plus4_mwb
+      w20 rd_mwb
+      w21 control_memwb bits
+      w22 reservado
+    """
+    if len(pw) != PIPE_WORDS:
+        return {"error": f"pipe_words len={len(pw)} != {PIPE_WORDS}"}
+
+    w = pw
+
+    # IF/ID
+    valid_ifid = (w[3] & 0x1)
+
+    # ID/EX fields
+    w9 = w[9]
+    funct7 = (w9 >> 25) & 0x7F
+    funct3 = (w9 >> 22) & 0x7
+    rs2    = (w9 >> 17) & 0x1F
+    rs1    = (w9 >> 12) & 0x1F
+    rd     = (w9 >> 7)  & 0x1F
+
+    c10 = w[10]
+    valid_idex     = (c10 >> 0) & 1
+    reg_write_idex = (c10 >> 1) & 1
+    mem_to_reg     = (c10 >> 2) & 1
+    mem_read       = (c10 >> 3) & 1
+    mem_write      = (c10 >> 4) & 1
+    branch         = (c10 >> 5) & 1
+    alu_src        = (c10 >> 6) & 1
+    alu_op         = (c10 >> 7) & 0x3
+    jump           = (c10 >> 9) & 1
+    jalr           = (c10 >> 10) & 1
+    wb_sel_pc4     = (c10 >> 11) & 1
+
+    # EX/MEM
+    w15 = w[15]
+    funct3_exmem = (w15 >> 10) & 0x7
+    rd_exmem     = (w15 >> 5) & 0x1F
+
+    c16 = w[16]
+    valid_exmem     = (c16 >> 0) & 1
+    reg_write_exmem = (c16 >> 1) & 1
+    mem_to_reg_exmem= (c16 >> 2) & 1
+    mem_read_exmem  = (c16 >> 3) & 1
+    mem_write_exmem = (c16 >> 4) & 1
+    branch_taken    = (c16 >> 5) & 1
+    wb_sel_pc4_exmem= (c16 >> 6) & 1
+
+    # MEM/WB
+    rd_mwb = w[20] & 0x1F
+    c21 = w[21]
+    valid_memwb     = (c21 >> 0) & 1
+    reg_write_memwb = (c21 >> 1) & 1
+    mem_to_reg_memwb= (c21 >> 2) & 1
+    wb_sel_pc4_memwb= (c21 >> 3) & 1
+
+    return {
+        "ifid": {
+            "pc": w[0],
+            "pc4": w[1],
+            "instr": w[2],
+            "valid": valid_ifid,
+        },
+        "idex": {
+            "pc": w[4],
+            "pc4": w[5],
+            "rs1_data": w[6],
+            "rs2_data": w[7],
+            "imm": w[8],
+            "rs1": rs1,
+            "rs2": rs2,
+            "rd": rd,
+            "funct3": funct3,
+            "funct7": funct7,
+            "ctrl": {
+                "valid": valid_idex,
+                "reg_write": reg_write_idex,
+                "mem_to_reg": mem_to_reg,
+                "mem_read": mem_read,
+                "mem_write": mem_write,
+                "branch": branch,
+                "alu_src": alu_src,
+                "alu_op": alu_op,
+                "jump": jump,
+                "jalr": jalr,
+                "wb_sel_pc4": wb_sel_pc4,
+            }
+        },
+        "exmem": {
+            "alu_result": w[11],
+            "rs2_pass": w[12],
+            "branch_target": w[13],
+            "pc4": w[14],
+            "rd": rd_exmem,
+            "funct3": funct3_exmem,
+            "ctrl": {
+                "valid": valid_exmem,
+                "reg_write": reg_write_exmem,
+                "mem_to_reg": mem_to_reg_exmem,
+                "mem_read": mem_read_exmem,
+                "mem_write": mem_write_exmem,
+                "branch_taken": branch_taken,
+                "wb_sel_pc4": wb_sel_pc4_exmem,
+            }
+        },
+        "memwb": {
+            "mem_read_data": w[17],
+            "alu_result": w[18],
+            "pc4": w[19],
+            "rd": rd_mwb,
+            "ctrl": {
+                "valid": valid_memwb,
+                "reg_write": reg_write_memwb,
+                "mem_to_reg": mem_to_reg_memwb,
+                "wb_sel_pc4": wb_sel_pc4_memwb,
+            }
+        },
+        "raw_words": w,
+    }
+
 class DebugHost:
     def __init__(self, port: str, baud: int, dm_dump_bytes: int = 64, timeout_s: float = 0.2):
         self.dm_dump_bytes = dm_dump_bytes
-        self.frame_len = 4 + 4 + 32*4 + dm_dump_bytes
+        self.frame_len = 4 + 4 + PIPE_WORDS*4 + 32*4 + dm_dump_bytes
         self.ser = serial.Serial(port, baud, timeout=timeout_s)
         self.ser.reset_input_buffer()
         self.ser.reset_output_buffer()
@@ -132,10 +275,15 @@ class DebugHost:
         pc = struct.unpack_from("<I", frame, off)[0]
         off += 4
 
+        pipe_words = list(struct.unpack_from(f"<{PIPE_WORDS}I", frame, off))
+        off += PIPE_WORDS*4
+
         regs = list(struct.unpack_from("<32I", frame, off))
         off += 32*4
 
         mem = frame[off:off + self.dm_dump_bytes]
+
+        pipe_dec = decode_pipe_words(pipe_words)
 
         return {
             "dump_type": dump_type,
@@ -144,6 +292,8 @@ class DebugHost:
             "halt_seen": halt_seen,
             "pad": pad,
             "pc": pc,
+            "pipe_words": pipe_words,
+            "pipe_decoded": pipe_dec,
             "regs": regs,
             "mem": mem
         }
@@ -152,7 +302,7 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("RISC-V Debug Host (UART) - Basys3")
-        self.geometry("1120x740")
+        self.geometry("1280x780")
 
         self.host: DebugHost | None = None
         self.worker_lock = threading.Lock()
@@ -245,9 +395,16 @@ class App(tk.Tk):
         self.status_var = tk.StringVar(value="(sin dump)")
         ttk.Label(st, textvariable=self.status_var, font=("Consolas", 11)).pack(anchor="w")
 
-        # Registers table
-        regs = ttk.LabelFrame(left, text="Registros x0..x31", padding=10)
-        regs.pack(fill="both", expand=True, pady=(10,0))
+        # Notebook: Regs / Pipe
+        nb = ttk.Notebook(left)
+        nb.pack(fill="both", expand=True, pady=(10,0))
+
+        # -------- Registros tab --------
+        regs_tab = ttk.Frame(nb)
+        nb.add(regs_tab, text="Registros")
+
+        regs = ttk.LabelFrame(regs_tab, text="Registros x0..x31", padding=10)
+        regs.pack(fill="both", expand=True)
 
         self.reg_tree = ttk.Treeview(regs, columns=("reg","hex","dec"), show="headings", height=14)
         self.reg_tree.heading("reg", text="Reg")
@@ -260,6 +417,59 @@ class App(tk.Tk):
 
         for i in range(32):
             self.reg_tree.insert("", "end", values=(f"x{i}", "0x00000000", "0"))
+
+        # -------- Pipeline tab --------
+        pipe_tab = ttk.Frame(nb)
+        nb.add(pipe_tab, text="Pipeline")
+
+        pipe_top = ttk.Frame(pipe_tab, padding=10)
+        pipe_top.pack(fill="x")
+
+        self.pipe_status_var = tk.StringVar(value="(sin dump)")
+        ttk.Label(pipe_top, textvariable=self.pipe_status_var, font=("Consolas", 10)).pack(anchor="w")
+
+        pipe_tables = ttk.Frame(pipe_tab, padding=(10,0,10,10))
+        pipe_tables.pack(fill="both", expand=True)
+
+        # IF/ID
+        self.ifid_tree = ttk.Treeview(pipe_tables, columns=("sig","val"), show="headings", height=5)
+        self.ifid_tree.heading("sig", text="IF/ID")
+        self.ifid_tree.heading("val", text="Valor")
+        self.ifid_tree.column("sig", width=120, anchor="w")
+        self.ifid_tree.column("val", width=320, anchor="w")
+        self.ifid_tree.grid(row=0, column=0, sticky="nsew", padx=(0,10), pady=(0,10))
+
+        # ID/EX
+        self.idex_tree = ttk.Treeview(pipe_tables, columns=("sig","val"), show="headings", height=8)
+        self.idex_tree.heading("sig", text="ID/EX")
+        self.idex_tree.heading("val", text="Valor")
+        self.idex_tree.column("sig", width=120, anchor="w")
+        self.idex_tree.column("val", width=320, anchor="w")
+        self.idex_tree.grid(row=0, column=1, sticky="nsew", padx=(0,0), pady=(0,10))
+
+        # EX/MEM
+        self.exmem_tree = ttk.Treeview(pipe_tables, columns=("sig","val"), show="headings", height=7)
+        self.exmem_tree.heading("sig", text="EX/MEM")
+        self.exmem_tree.heading("val", text="Valor")
+        self.exmem_tree.column("sig", width=120, anchor="w")
+        self.exmem_tree.column("val", width=320, anchor="w")
+        self.exmem_tree.grid(row=1, column=0, sticky="nsew", padx=(0,10), pady=(0,0))
+
+        # MEM/WB
+        self.memwb_tree = ttk.Treeview(pipe_tables, columns=("sig","val"), show="headings", height=6)
+        self.memwb_tree.heading("sig", text="MEM/WB")
+        self.memwb_tree.heading("val", text="Valor")
+        self.memwb_tree.column("sig", width=120, anchor="w")
+        self.memwb_tree.column("val", width=320, anchor="w")
+        self.memwb_tree.grid(row=1, column=1, sticky="nsew", padx=(0,0), pady=(0,0))
+
+        pipe_tables.columnconfigure(0, weight=1)
+        pipe_tables.columnconfigure(1, weight=1)
+        pipe_tables.rowconfigure(0, weight=1)
+        pipe_tables.rowconfigure(1, weight=1)
+
+        for tree in [self.ifid_tree, self.idex_tree, self.exmem_tree, self.memwb_tree]:
+            tree.insert("", "end", values=("—", "—"))
 
         # Memory hexdump
         mem = ttk.LabelFrame(right, text="dmem[0..]", padding=10)
@@ -313,7 +523,7 @@ class App(tk.Tk):
         try:
             self.host = DebugHost(port, baud, dm_dump_bytes=dm)
             self.set_controls(True)
-            self.log(f"[INFO] Conectado a {port} @ {baud}, DM={dm}")
+            self.log(f"[INFO] Conectado a {port} @ {baud}, DM={dm}, PIPE_WORDS={PIPE_WORDS}")
         except Exception as e:
             self.host = None
             messagebox.showerror("Error", f"No pude conectar: {e}")
@@ -347,8 +557,6 @@ class App(tk.Tk):
         if not path:
             return
 
-        # Por defecto, respetamos las direcciones del archivo si trae @ADDR o ADDR:DATA.
-        # Si el archivo es secuencial sin @, empieza en 0.
         self.run_load_program(path)
 
     def run_load_program(self, path: str):
@@ -362,23 +570,14 @@ class App(tk.Tk):
                     self.log(f"[INFO] Cargando programa: {path}")
                     self.log(f"[INFO] Words a programar: {len(items)}")
 
-                    # Programar (addr,data) uno por uno
-                    # Nota: tu debug_unit hace imem_dbg_we pulso 1 ciclo, alcanza con enviar la secuencia.
                     for k, (addr, word) in enumerate(items):
                         self.host.program_word(addr, word)
-                        # pequeño respiro opcional si tu UART/CPU es muy sensible
-                        # time.sleep(0.0005)
-
                         if (k+1) % 64 == 0:
                             self.log(f"[INFO] ... {k+1}/{len(items)}")
 
                     first_addr = items[0][0]
                     last_addr  = items[-1][0]
                     self.log(f"[OK] Programa cargado. Rango: 0x{first_addr:08x} .. 0x{last_addr:08x}")
-
-                    # opcional: reset fetch automático
-                    # self.host.send_cmd("R")
-                    # self.log("[TX] R (reset fetch)")
 
                 except Exception as e:
                     self.after(0, lambda: messagebox.showerror("Error", str(e)))
@@ -439,6 +638,11 @@ class App(tk.Tk):
         threading.Thread(target=worker, daemon=True).start()
 
     # ---------------- Apply dump to UI ----------------
+    def _set_tree_rows(self, tree: ttk.Treeview, rows: list[tuple[str,str]]):
+        tree.delete(*tree.get_children())
+        for k, v in rows:
+            tree.insert("", "end", values=(k, v))
+
     def apply_dump(self, d: dict):
         t = dump_type_str(d["dump_type"])
         flags = d["flags"]
@@ -452,15 +656,76 @@ class App(tk.Tk):
         )
         self.log(f"[RX] DUMP type={t} flags=0x{flags:02x} pc=0x{pc:08x}")
 
+        # Regs
         regs = d["regs"]
         for i, item in enumerate(self.reg_tree.get_children()):
             val = regs[i] & 0xFFFFFFFF
-            sval = val if val < 0x80000000 else val - 0x100000000
+            sval = _signed32(val)
             self.reg_tree.item(item, values=(f"x{i}", f"0x{val:08x}", f"{sval}"))
 
+        # Mem
         self.mem_text.delete("1.0", "end")
         for line in hexdump_lines(d["mem"], base=0):
             self.mem_text.insert("end", line + "\n")
+
+        # Pipe
+        pd = d.get("pipe_decoded", {})
+        if "error" in pd:
+            self.pipe_status_var.set(f"[PIPE] ERROR: {pd['error']}")
+            return
+
+        ifid = pd["ifid"]
+        idex = pd["idex"]
+        exmem = pd["exmem"]
+        memwb = pd["memwb"]
+
+        self.pipe_status_var.set(
+            f"[PIPE] IF/ID v={ifid['valid']} | ID/EX v={idex['ctrl']['valid']} | EX/MEM v={exmem['ctrl']['valid']} | MEM/WB v={memwb['ctrl']['valid']}"
+        )
+
+        self._set_tree_rows(self.ifid_tree, [
+            ("valid", str(ifid["valid"])),
+            ("pc",    f"0x{ifid['pc']:08x}"),
+            ("pc+4",  f"0x{ifid['pc4']:08x}"),
+            ("instr", f"0x{ifid['instr']:08x}"),
+        ])
+
+        idex_ctrl = idex["ctrl"]
+        self._set_tree_rows(self.idex_tree, [
+            ("valid",      str(idex_ctrl["valid"])),
+            ("pc",         f"0x{idex['pc']:08x}"),
+            ("pc+4",       f"0x{idex['pc4']:08x}"),
+            ("rs1_data",   f"0x{idex['rs1_data']:08x} ({_signed32(idex['rs1_data'])})"),
+            ("rs2_data",   f"0x{idex['rs2_data']:08x} ({_signed32(idex['rs2_data'])})"),
+            ("imm",        f"0x{idex['imm']:08x} ({_signed32(idex['imm'])})"),
+            ("rs1/rs2/rd", f"{idex['rs1']}/{idex['rs2']}/{idex['rd']}"),
+            ("f3/f7",      f"{idex['funct3']}/{idex['funct7']}"),
+            ("ctrl",       f"RW={idex_ctrl['reg_write']} MR={idex_ctrl['mem_read']} MW={idex_ctrl['mem_write']} "
+                           f"M2R={idex_ctrl['mem_to_reg']} AS={idex_ctrl['alu_src']} "
+                           f"ALUop={idex_ctrl['alu_op']} BR={idex_ctrl['branch']} J={idex_ctrl['jump']} JALR={idex_ctrl['jalr']} PC4={idex_ctrl['wb_sel_pc4']}"),
+        ])
+
+        exmem_ctrl = exmem["ctrl"]
+        self._set_tree_rows(self.exmem_tree, [
+            ("valid",        str(exmem_ctrl["valid"])),
+            ("alu_result",   f"0x{exmem['alu_result']:08x} ({_signed32(exmem['alu_result'])})"),
+            ("rs2_pass",     f"0x{exmem['rs2_pass']:08x} ({_signed32(exmem['rs2_pass'])})"),
+            ("br_target",    f"0x{exmem['branch_target']:08x}"),
+            ("pc+4",         f"0x{exmem['pc4']:08x}"),
+            ("rd/f3",        f"{exmem['rd']}/{exmem['funct3']}"),
+            ("ctrl",         f"RW={exmem_ctrl['reg_write']} MR={exmem_ctrl['mem_read']} MW={exmem_ctrl['mem_write']} "
+                             f"M2R={exmem_ctrl['mem_to_reg']} BT={exmem_ctrl['branch_taken']} PC4={exmem_ctrl['wb_sel_pc4']}"),
+        ])
+
+        memwb_ctrl = memwb["ctrl"]
+        self._set_tree_rows(self.memwb_tree, [
+            ("valid",        str(memwb_ctrl["valid"])),
+            ("mem_data",     f"0x{memwb['mem_read_data']:08x} ({_signed32(memwb['mem_read_data'])})"),
+            ("alu_result",   f"0x{memwb['alu_result']:08x} ({_signed32(memwb['alu_result'])})"),
+            ("pc+4",         f"0x{memwb['pc4']:08x}"),
+            ("rd",           f"{memwb['rd']}"),
+            ("ctrl",         f"RW={memwb_ctrl['reg_write']} M2R={memwb_ctrl['mem_to_reg']} PC4={memwb_ctrl['wb_sel_pc4']}"),
+        ])
 
 def main():
     app = App()

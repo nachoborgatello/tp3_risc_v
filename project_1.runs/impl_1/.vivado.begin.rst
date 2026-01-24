@@ -1,35 +1,10 @@
 <?xml version="1.0"?>
 <ProcessHandle Version="1" Minor="0">
-    <Process Command="vivado.bat" Owner="ignac" Host="DESKTOP-0UNMQ8B" Pid="13292" HostCore="8" HostMemory="014752673792">
+    <Process Command="vivado.bat" Owner="ignac" Host="DESKTOP-0UNMQ8B" Pid="16072" HostCore="8" HostMemory="014752673792">
     </Process>
 </ProcessHandle>
 <?xml version="1.0"?>
 <ProcessHandle Version="1" Minor="0">
-    <Process Command="vivado.bat" Owner="ignac" Host="DESKTOP-0UNMQ8B" Pid="9744" HostCore="8" HostMemory="014752673792">
-    </Process>
-</ProcessHandle>
-<?xml version="1.0"?>
-<ProcessHandle Version="1" Minor="0">
-    <Process Command="vivado.bat" Owner="ignac" Host="DESKTOP-0UNMQ8B" Pid="11120" HostCore="8" HostMemory="014752673792">
-    </Process>
-</ProcessHandle>
-<?xml version="1.0"?>
-<ProcessHandle Version="1" Minor="0">
-    <Process Command="vivado.bat" Owner="ignac" Host="DESKTOP-0UNMQ8B" Pid="11108" HostCore="8" HostMemory="014752673792">
-    </Process>
-</ProcessHandle>
-<?xml version="1.0"?>
-<ProcessHandle Version="1" Minor="0">
-    <Process Command="vivado.bat" Owner="ignac" Host="DESKTOP-0UNMQ8B" Pid="1960" HostCore="8" HostMemory="014752673792">
-    </Process>
-</ProcessHandle>
-<?xml version="1.0"?>
-<ProcessHandle Version="1" Minor="0">
-    <Process Command="vivado.bat" Owner="ignac" Host="DESKTOP-0UNMQ8B" Pid="11336" HostCore="8" HostMemory="014752673792">
-    </Process>
-</ProcessHandle>
-<?xml version="1.0"?>
-<ProcessHandle Version="1" Minor="0">
-    <Process Command="vivado.bat" Owner="ignac" Host="DESKTOP-0UNMQ8B" Pid="18580" HostCore="8" HostMemory="014752673792">
+    <Process Command="vivado.bat" Owner="ignac" Host="DESKTOP-0UNMQ8B" Pid="7544" HostCore="8" HostMemory="014752673792">
     </Process>
 </ProcessHandle>

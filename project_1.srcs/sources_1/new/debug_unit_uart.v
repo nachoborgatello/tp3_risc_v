@@ -17,8 +17,9 @@ module debug_unit_uart #(
 
     // CPU -> DEBUG
     input  wire [31:0]        dbg_pc,
-    input  wire              dbg_pipe_empty,
-    input  wire              dbg_halt_seen,
+    input  wire               dbg_pipe_empty,
+    input  wire               dbg_halt_seen,
+    input  wire [23*32-1:0]   dbg_pipe_flat,   // <<< NUEVO: pipeline latches packed
 
     // DEBUG -> CPU
     output reg         dbg_freeze,
@@ -33,11 +34,11 @@ module debug_unit_uart #(
     output reg         imem_dbg_we,
     output reg  [31:0] imem_dbg_addr,
     output reg  [31:0] imem_dbg_wdata,
-    
+
     // DEBUG -> REGFILE (lectura)
     output reg  [4:0]  rf_dbg_addr,
     input  wire [31:0] rf_dbg_data,
-    
+
     // DEBUG -> DMEM (lectura byte)
     output reg  [11:0] dmem_dbg_addr,   // para BYTES=4096 => 12 bits
     input  wire [7:0]  dmem_dbg_data
@@ -51,6 +52,7 @@ module debug_unit_uart #(
     localparam ST_DRAIN  = 4'd4;
     localparam ST_STEP   = 4'd5;
     localparam ST_DUMP   = 4'd6;
+    localparam ST_STEP_WAIT = 4'd7;
 
     reg [3:0] state;
 
@@ -64,18 +66,28 @@ module debug_unit_uart #(
     reg tx_inflight;
 
     // dump index
-    localparam integer DUMP_HDR_BYTES = 4;
-    localparam integer DUMP_PC_BYTES  = 4;
-    localparam integer DUMP_REG_BYTES = 32*4;
-    localparam integer DUMP_MEM_BYTES = DM_DUMP_BYTES;
-    localparam integer DUMP_TOTAL     = DUMP_HDR_BYTES + DUMP_PC_BYTES + DUMP_REG_BYTES + DUMP_MEM_BYTES;
-    localparam ST_STEP_WAIT = 4'd7;
+    localparam integer DUMP_HDR_BYTES  = 4;
+    localparam integer DUMP_PC_BYTES   = 4;
+
+    localparam integer PIPE_WORDS      = 23;
+    localparam integer DUMP_PIPE_BYTES = PIPE_WORDS*4;
+
+    localparam integer DUMP_REG_BYTES  = 32*4;
+    localparam integer DUMP_MEM_BYTES  = DM_DUMP_BYTES;
+
+    localparam integer DUMP_TOTAL      =
+        DUMP_HDR_BYTES + DUMP_PC_BYTES + DUMP_PIPE_BYTES + DUMP_REG_BYTES + DUMP_MEM_BYTES;
+
+    // Offsets
+    localparam [15:0] OFF_PC   = 16'd4;
+    localparam [15:0] OFF_PIPE = 16'd8;
+    localparam [15:0] OFF_REG  = 16'd8 + DUMP_PIPE_BYTES;
+    localparam [15:0] OFF_MEM  = 16'd8 + DUMP_PIPE_BYTES + DUMP_REG_BYTES;
 
     reg [15:0] dump_idx;
     reg        dump_done;
-    reg pending_step_dump;
+    reg        pending_step_dump;
 
-    
     wire [31:0] addr_next = rx_addr_buf | ({24'b0, rx_dout} << (rx_cnt*8));
     wire [31:0] data_next = rx_data_buf | ({24'b0, rx_dout} << (rx_cnt*8));
 
@@ -162,7 +174,7 @@ module debug_unit_uart #(
                     end
                   end
                 end
-                
+
                 ST_P_DATA: begin
                   if (rx_done_tick) begin
                     rx_data_buf <= data_next;
@@ -189,35 +201,33 @@ module debug_unit_uart #(
                         dump_type  <= 8'd2;
                         state      <= ST_DRAIN;
                     end
-
                 end
 
                 ST_DRAIN: begin
                     dbg_freeze <= 1'b0;
                     dbg_drain  <= 1'b1;
-                
+
                     if (dbg_pipe_empty) begin
                         dbg_drain  <= 1'b0;
                         dbg_freeze <= 1'b1;
                         state      <= ST_DUMP;
                         pending_step_dump <= 1'b0;
                     end
-                end 
+                end
 
                 ST_STEP: begin
                     dbg_freeze <= 1'b0;
                     dbg_step   <= 1'b1;         // pulso 1 ciclo al CPU
                     state      <= ST_STEP_WAIT; // esperamos 1 ciclo para que el avance se "registre"
                 end
-                
+
                 ST_STEP_WAIT: begin
-                    // En este ciclo ya bajamos dbg_step (por default pulse) y dejamos correr 1 ciclo más.
-                    // Después drenamos para que el estado quede estable antes del dump.
+                    // dejamos correr 1 ciclo más y drenamos
                     dbg_freeze <= 1'b0;
                     dbg_drain  <= 1'b1;
                     state      <= ST_DRAIN;
                 end
-                
+
                 ST_DUMP: begin
                     dbg_freeze <= 1'b1;
                     if (dump_done)
@@ -230,21 +240,61 @@ module debug_unit_uart #(
     end
 
     // ============================================================
+    // Helpers para PIPE (23 words)
+    // ============================================================
+    function [31:0] pipe_word;
+        input [5:0] widx; // 0..22
+        begin
+            case (widx)
+                6'd0:  pipe_word = dbg_pipe_flat[31:0];
+                6'd1:  pipe_word = dbg_pipe_flat[63:32];
+                6'd2:  pipe_word = dbg_pipe_flat[95:64];
+                6'd3:  pipe_word = dbg_pipe_flat[127:96];
+                6'd4:  pipe_word = dbg_pipe_flat[159:128];
+                6'd5:  pipe_word = dbg_pipe_flat[191:160];
+                6'd6:  pipe_word = dbg_pipe_flat[223:192];
+                6'd7:  pipe_word = dbg_pipe_flat[255:224];
+                6'd8:  pipe_word = dbg_pipe_flat[287:256];
+                6'd9:  pipe_word = dbg_pipe_flat[319:288];
+                6'd10: pipe_word = dbg_pipe_flat[351:320];
+                6'd11: pipe_word = dbg_pipe_flat[383:352];
+                6'd12: pipe_word = dbg_pipe_flat[415:384];
+                6'd13: pipe_word = dbg_pipe_flat[447:416];
+                6'd14: pipe_word = dbg_pipe_flat[479:448];
+                6'd15: pipe_word = dbg_pipe_flat[511:480];
+                6'd16: pipe_word = dbg_pipe_flat[543:512];
+                6'd17: pipe_word = dbg_pipe_flat[575:544];
+                6'd18: pipe_word = dbg_pipe_flat[607:576];
+                6'd19: pipe_word = dbg_pipe_flat[639:608];
+                6'd20: pipe_word = dbg_pipe_flat[671:640];
+                6'd21: pipe_word = dbg_pipe_flat[703:672];
+                6'd22: pipe_word = dbg_pipe_flat[735:704];
+                default: pipe_word = 32'h0;
+            endcase
+        end
+    endfunction
+
+    // ============================================================
     // TX DUMP FSM  (STREAM: rf_dbg_* y dmem_dbg_*)
     // ============================================================
-    
-    // pre-cálculos para regs
-    wire [15:0] reg_off   = (dump_idx - 16'd8);
+
+    // pre-cálculos para regs (válidos cuando dump_idx está en zona REGS)
+    wire [15:0] reg_off   = (dump_idx - OFF_REG);
     wire [4:0]  reg_idx   = reg_off[15:2]; // /4
     wire [1:0]  reg_byte  = reg_off[1:0];
-    
+
+    // pre-cálculos para pipe (bytes)
+    wire [15:0] pipe_off  = (dump_idx - OFF_PIPE);
+    wire [5:0]  pipe_widx = pipe_off[15:2]; // 0..22
+    wire [1:0]  pipe_bidx = pipe_off[1:0];  // byte in word
+    wire [31:0] pipe_w    = pipe_word(pipe_widx);
+
     // pre-cálculos para mem (bytes)
-    wire [15:0] mem_off   = dump_idx - (16'd8 + DUMP_REG_BYTES); // 0..DM_DUMP_BYTES-1
+    wire [15:0] mem_off   = dump_idx - OFF_MEM; // 0..DM_DUMP_BYTES-1
     wire [11:0] mem_idx   = mem_off[11:0];
-    
-    // el dato del reg viene del puerto debug (combinacional)
+
     wire [31:0] reg_word  = rf_dbg_data;
-    
+
     always @(posedge clk) begin
         if (reset) begin
             tx_start     <= 1'b0;
@@ -252,33 +302,34 @@ module debug_unit_uart #(
             tx_inflight  <= 1'b0;
             dump_idx     <= 16'd0;
             dump_done    <= 1'b0;
-    
+
             // direcciones debug en reset
             rf_dbg_addr   <= 5'd0;
             dmem_dbg_addr <= 12'd0;
-    
+
         end else begin
             tx_start  <= 1'b0;
             dump_done <= 1'b0;
-    
+
             if (tx_done_tick)
                 tx_inflight <= 1'b0;
-    
+
             if (state == ST_DUMP) begin
                 // Mantener direcciones coherentes con dump_idx
-                if (dump_idx >= 16'd8 && dump_idx < (16'd8 + DUMP_REG_BYTES))
+                if (dump_idx >= OFF_REG && dump_idx < (OFF_REG + DUMP_REG_BYTES))
                     rf_dbg_addr <= reg_idx;
                 else
                     rf_dbg_addr <= 5'd0;
-    
-                if (dump_idx >= (16'd8 + DUMP_REG_BYTES))
+
+                if (dump_idx >= OFF_MEM)
                     dmem_dbg_addr <= mem_idx;
                 else
                     dmem_dbg_addr <= 12'd0;
-    
+
                 if (!tx_inflight) begin
                     // elegir byte a transmitir
                     if (dump_idx < 16'd4) begin
+                        // Header (4 bytes)
                         case (dump_idx)
                             16'd0: tx_din <= 8'hD0;
                             16'd1: tx_din <= dump_type;
@@ -286,17 +337,29 @@ module debug_unit_uart #(
                             16'd3: tx_din <= 8'h00;
                             default: tx_din <= 8'h00;
                         endcase
-    
-                    end else if (dump_idx < 16'd8) begin
-                        case (dump_idx - 16'd4)
+
+                    end else if (dump_idx < OFF_PIPE) begin
+                        // PC (bytes 4..7)
+                        case (dump_idx - OFF_PC)
                             16'd0: tx_din <= dbg_pc[7:0];
                             16'd1: tx_din <= dbg_pc[15:8];
                             16'd2: tx_din <= dbg_pc[23:16];
                             16'd3: tx_din <= dbg_pc[31:24];
                             default: tx_din <= 8'h00;
                         endcase
-    
-                    end else if (dump_idx < (16'd8 + DUMP_REG_BYTES)) begin
+
+                    end else if (dump_idx < OFF_REG) begin
+                        // PIPE (23 words = 92 bytes)
+                        case (pipe_bidx)
+                            2'd0: tx_din <= pipe_w[7:0];
+                            2'd1: tx_din <= pipe_w[15:8];
+                            2'd2: tx_din <= pipe_w[23:16];
+                            2'd3: tx_din <= pipe_w[31:24];
+                            default: tx_din <= 8'h00;
+                        endcase
+
+                    end else if (dump_idx < OFF_MEM) begin
+                        // REGS (32 x 32-bit)
                         case (reg_byte)
                             2'd0: tx_din <= reg_word[7:0];
                             2'd1: tx_din <= reg_word[15:8];
@@ -304,15 +367,15 @@ module debug_unit_uart #(
                             2'd3: tx_din <= reg_word[31:24];
                             default: tx_din <= 8'h00;
                         endcase
-    
+
                     end else begin
-                        // bytes de DMEM: vienen del puerto dmem_dbg_data
+                        // DMEM bytes
                         tx_din <= dmem_dbg_data;
                     end
-    
+
                     tx_start    <= 1'b1;
                     tx_inflight <= 1'b1;
-    
+
                     if (dump_idx == DUMP_TOTAL-1) begin
                         dump_idx  <= 16'd0;
                         dump_done <= 1'b1;
@@ -322,13 +385,12 @@ module debug_unit_uart #(
                 end
             end else begin
                 dump_idx <= 16'd0;
-    
+
                 // Opcional: estacionar direcciones
                 rf_dbg_addr   <= 5'd0;
                 dmem_dbg_addr <= 12'd0;
             end
         end
-end
-
+    end
 
 endmodule

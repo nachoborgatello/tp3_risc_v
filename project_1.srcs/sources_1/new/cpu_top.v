@@ -27,6 +27,7 @@ module cpu_top #(
     output wire [31:0]       dbg_pc,
     //output wire [32*32-1:0]  dbg_regs_flat,
     //output wire [64*8-1:0]   dbg_dmem_flat,
+    output wire [23*32-1:0] dbg_pipe_flat,
     
     // DEBUG stream ports
     input  wire [4:0]  rf_dbg_addr,
@@ -503,6 +504,88 @@ module cpu_top #(
     );
     
     assign dbg_pc = pc_if;
+
+        // ============================================================
+    // PIPE DEBUG PACK (23 words)
+    // ============================================================
+    // IF/ID (4 words)
+    wire [31:0] pipe_w0  = pc_ifid;
+    wire [31:0] pipe_w1  = pc_plus4_ifid;
+    wire [31:0] pipe_w2  = instr_ifid;
+    wire [31:0] pipe_w3  = {31'b0, valid_ifid};
+
+    // ID/EX (8 words)
+    wire [31:0] pipe_w4  = pc_idex;
+    wire [31:0] pipe_w5  = pc_plus4_idex;
+    wire [31:0] pipe_w6  = rs1_data_idex;
+    wire [31:0] pipe_w7  = rs2_data_idex;
+    wire [31:0] pipe_w8  = imm_idex;
+
+    // Fields pack: [31:25]=funct7, [24:22]=funct3, [21:17]=rs2, [16:12]=rs1, [11:7]=rd
+    wire [31:0] pipe_w9  = {funct7_idex, funct3_idex, rs2_idex, rs1_idex, rd_idex, 7'b0};
+
+    // Control pack (bits fijos para GUI)
+    // bit0  valid_idex
+    // bit1  reg_write
+    // bit2  mem_to_reg
+    // bit3  mem_read
+    // bit4  mem_write
+    // bit5  branch
+    // bit6  alu_src
+    // bit8:7  alu_op[1:0]
+    // bit9  jump
+    // bit10 jalr
+    // bit11 wb_sel_pc4
+    wire [31:0] pipe_w10 = {
+        20'b0,
+        wb_sel_pc4_idex, jalr_idex, jump_idex,
+        alu_op_idex,
+        alu_src_idex, branch_idex, mem_write_idex, mem_read_idex, mem_to_reg_idex, reg_write_idex,
+        valid_idex
+    };
+
+    // EX/MEM (6 words)
+    wire [31:0] pipe_w11 = alu_result_exmem;
+    wire [31:0] pipe_w12 = rs2_pass_exmem;
+    wire [31:0] pipe_w13 = branch_target_exmem;
+    wire [31:0] pipe_w14 = pc_plus4_exmem;
+
+    // Fields pack: rd + funct3
+    wire [31:0] pipe_w15 = {19'b0, funct3_exmem, rd_exmem, 5'b0};
+
+    // Control pack
+    // bit0  valid_exmem
+    // bit1  reg_write
+    // bit2  mem_to_reg
+    // bit3  mem_read
+    // bit4  mem_write
+    // bit5  branch_taken
+    // bit6  wb_sel_pc4
+    wire [31:0] pipe_w16 = {25'b0, wb_sel_pc4_exmem, branch_taken_exmem, mem_write_exmem, mem_read_exmem, mem_to_reg_exmem, reg_write_exmem, valid_exmem};
+
+    // MEM/WB (5 words)
+    wire [31:0] pipe_w17 = mem_read_data_mwb;
+    wire [31:0] pipe_w18 = alu_result_mwb;
+    wire [31:0] pipe_w19 = pc_plus4_mwb;
+    wire [31:0] pipe_w20 = {27'b0, rd_mwb};
+
+    // Control pack
+    // bit0  valid_memwb
+    // bit1  reg_write
+    // bit2  mem_to_reg
+    // bit3  wb_sel_pc4
+    wire [31:0] pipe_w21 = {28'b0, wb_sel_pc4_mwb, mem_to_reg_mwb, reg_write_mwb, valid_memwb};
+
+    // Extra/reservado (por si querés crecer sin romper GUI)
+    wire [31:0] pipe_w22 = 32'h0000_0000;
+
+    // IMPORTANT: word0 en [31:0], word1 en [63:32], etc.
+    assign dbg_pipe_flat = {
+        pipe_w22, pipe_w21, pipe_w20, pipe_w19, pipe_w18, pipe_w17,
+        pipe_w16, pipe_w15, pipe_w14, pipe_w13, pipe_w12, pipe_w11,
+        pipe_w10, pipe_w9,  pipe_w8,  pipe_w7,  pipe_w6,  pipe_w5, pipe_w4,
+        pipe_w3,  pipe_w2,  pipe_w1,  pipe_w0
+    };
 
 endmodule
 

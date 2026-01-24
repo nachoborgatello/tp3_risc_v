@@ -7,6 +7,9 @@ module tb_top_debug_system;
     localparam integer BAUD   = 115200;
     localparam integer DM_DUMP_BYTES = 64;
 
+    // NUEVO: cantidad de words del dump de pipeline (dbg_pipe_flat = 23*32)
+    localparam integer PIPE_WORDS = 23;
+
     reg clk, reset;
 
     wire dut_uart_rx;
@@ -67,6 +70,9 @@ module tb_top_debug_system;
     // ---------------------------
     // Scoreboard buffers
     // ---------------------------
+    // NUEVO: pipeline words (IF/ID, ID/EX, EX/MEM, MEM/WB empaquetados)
+    reg [31:0] pipe_dump [0:PIPE_WORDS-1];
+
     reg [31:0] regs_dump [0:31];
     reg [7:0]  mem_dump  [0:DM_DUMP_BYTES-1];
 
@@ -190,11 +196,24 @@ module tb_top_debug_system;
         end
     endtask
 
-    // Lee payload y lo parsea en regs_dump + mem_dump
+    // ============================================================
+    // CAMBIO CLAVE:
+    // Ahora el payload es: PIPE_WORDS*4 + 32*4 + DM_DUMP_BYTES
+    // ============================================================
     task recv_dump_payload_parse;
-        integer r, i;
+        integer w, r, i;
         reg [7:0] b0,b1,b2,b3;
         begin
+            // 1) PIPE (23 words)
+            for (w = 0; w < PIPE_WORDS; w = w + 1) begin
+                host_recv_byte(b0);
+                host_recv_byte(b1);
+                host_recv_byte(b2);
+                host_recv_byte(b3);
+                pipe_dump[w] = {b3,b2,b1,b0};
+            end
+
+            // 2) REGS (32 words)
             for (r = 0; r < 32; r = r + 1) begin
                 host_recv_byte(b0);
                 host_recv_byte(b1);
@@ -202,6 +221,8 @@ module tb_top_debug_system;
                 host_recv_byte(b3);
                 regs_dump[r] = {b3,b2,b1,b0};
             end
+
+            // 3) DMEM bytes
             for (i = 0; i < DM_DUMP_BYTES; i = i + 1) begin
                 host_recv_byte(mem_dump[i]);
             end
@@ -265,19 +286,11 @@ module tb_top_debug_system;
             // x1 = 0
             program_word(32'h0000_0000, 32'h00000093); // addi x1,x0,0
 
-            // loop i=0..63: sb x1, i(x0)
-            // Como no tenemos loop real acá, lo hacemos desde el TB programando stores:
-            // OJO: esto pisa IMEM, por eso se usa SOLO dentro de prepare_test, antes del programa real.
             for (i = 0; i < 64; i = i + 1) begin
-                // sb x1, imm(x0)
-                // encoding general sb: imm[11:5]|rs2|rs1|funct3|imm[4:0]|opcode
-                // rs2=x1 (00001), rs1=x0 (00000), funct3=000, opcode=0100011 (0x23)
-                // armamos inmediato i
                 program_word(32'h0000_0004 + i*4,
                     { {20{1'b0}},
                       i[11:5], 5'd1, 5'd0, 3'b000, i[4:0], 7'b0100011 });
             end
-            // ebreak al final
             program_word(32'h0000_0004 + 64*4, 32'h00100073);
 
             reset_fetch();
@@ -285,14 +298,11 @@ module tb_top_debug_system;
         end
     endtask
 
-    // NUEVO: prepara cada test (limpia imem + opcional limpia dmem)
     task prepare_test;
         input integer clear_dmem;
         begin
-            // 1) IMEM limpia: 0x00..0x7C (32 words) o más
-            wipe_imem_nops(32'h0000_0000, 64); // 64 words = 256 bytes (0x00..0xFC)
+            wipe_imem_nops(32'h0000_0000, 64);
 
-            // 2) Opcional: DMEM limpia
             if (clear_dmem) begin
                 wipe_dmem64();
             end
@@ -300,7 +310,7 @@ module tb_top_debug_system;
     endtask
 
     // ============================================================
-    // Programas de prueba
+    // Programas de prueba (sin cambios)
     // ============================================================
 
     task load_prog_alu_basic;
@@ -370,7 +380,6 @@ module tb_top_debug_system;
             program_word(32'h0000_0004, 32'h00038367); // jalr x6,x7,0 -> 0x28
             program_word(32'h0000_0008, 32'h00D00193); // addi x3,x0,13 (NO)
 
-            // padding / nops
             program_word(32'h0000_000C, 32'h00000013);
             program_word(32'h0000_0010, 32'h00000013);
             program_word(32'h0000_0014, 32'h00000013);
@@ -409,8 +418,8 @@ module tb_top_debug_system;
 
     task load_prog_halfword_sh_lh_lhu;
         begin
-            program_word(32'h0000_0000, 32'h000080B7); // lui  x1,0x8  -> 0x00008000
-            program_word(32'h0000_0004, 32'h00108093); // addi x1,x1,1  -> 0x00008001
+            program_word(32'h0000_0000, 32'h000080B7); // lui  x1,0x8
+            program_word(32'h0000_0004, 32'h00108093); // addi x1,x1,1
             program_word(32'h0000_0008, 32'h00101023); // sh x1,0(x0)
             program_word(32'h0000_000C, 32'h00001103); // lh  x2,0(x0)
             program_word(32'h0000_0010, 32'h00005183); // lhu x3,0(x0)

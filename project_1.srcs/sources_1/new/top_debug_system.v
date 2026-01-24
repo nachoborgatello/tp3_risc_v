@@ -23,6 +23,9 @@ module top_debug_system #(
     wire [11:0] dmem_dbg_addr;
     wire [7:0]  dmem_dbg_data;
 
+    // NUEVO: pipeline latches flat
+    wire [23*32-1:0] dbg_pipe_flat;
+
     // ============================================================
     // 1) Baud tick para oversampling 16x
     // ============================================================
@@ -126,6 +129,7 @@ module top_debug_system #(
         .dbg_pc(dbg_pc),
         .dbg_pipe_empty(dbg_pipe_empty),
         .dbg_halt_seen(dbg_halt_seen),
+        .dbg_pipe_flat(dbg_pipe_flat),   // <<< NUEVO
 
         .dbg_freeze(dbg_freeze),
         .dbg_run(dbg_run),
@@ -173,6 +177,8 @@ module top_debug_system #(
       .dbg_halt_seen(dbg_halt_seen),
 
       .dbg_pc(dbg_pc),
+
+      .dbg_pipe_flat(dbg_pipe_flat),  // <<< NUEVO
 
       .rf_dbg_addr(rf_dbg_addr),
       .rf_dbg_data(rf_dbg_data),
