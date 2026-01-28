@@ -57,8 +57,6 @@ if {$::dispatch::connected} {
 
 OPTRACE "synth_1" START { ROLLUP_AUTO }
 set_param general.usePosixSpawnForFork 1
-set_param chipscope.maxJobs 2
-set_msg_config -id {Common 17-41} -limit 10000000
 OPTRACE "Creating in-memory project" START { }
 create_project -in_memory -part xc7a35tcpg236-1
 
@@ -103,7 +101,7 @@ read_verilog -library xil_defaultlib {
   C:/Users/ignac/Downloads/project_1/project_1.srcs/sources_1/new/wb_stage.v
   C:/Users/ignac/Downloads/project_1/project_1.srcs/sources_1/new/top_debug_system.v
 }
-read_ip -quiet c:/Users/ignac/Downloads/project_1/project_1.srcs/sources_1/ip/clk_wiz_50m/clk_wiz_50m.xci
+read_ip -quiet C:/Users/ignac/Downloads/project_1/project_1.srcs/sources_1/ip/clk_wiz_50m/clk_wiz_50m.xci
 set_property used_in_implementation false [get_files -all c:/Users/ignac/Downloads/project_1/project_1.gen/sources_1/ip/clk_wiz_50m/clk_wiz_50m_board.xdc]
 set_property used_in_implementation false [get_files -all c:/Users/ignac/Downloads/project_1/project_1.gen/sources_1/ip/clk_wiz_50m/clk_wiz_50m.xdc]
 set_property used_in_implementation false [get_files -all c:/Users/ignac/Downloads/project_1/project_1.gen/sources_1/ip/clk_wiz_50m/clk_wiz_50m_ooc.xdc]

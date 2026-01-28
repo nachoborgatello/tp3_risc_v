@@ -1,4 +1,4 @@
-PIPE_WORDS = 23  # debe coincidir con cpu_top
+PIPE_WORDS = 23
 
 def signed32(x: int) -> int:
     x &= 0xFFFFFFFF

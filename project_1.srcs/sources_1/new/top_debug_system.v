@@ -2,8 +2,10 @@
 `default_nettype none
 
 module top_debug_system #(
-    // Ahora el sistema corre a 50 MHz (clock generado)
-    parameter integer CLK_HZ = 50_000_000,
+    // Frecuencia del clock físico de entrada (Basys3): 100 MHz
+    parameter integer CLK_IN_HZ = 100_000_000,
+
+    // UART baud
     parameter integer BAUD   = 115200,
 
     // CPU params
@@ -18,33 +20,41 @@ module top_debug_system #(
     output wire s_tick_out
 );
 
-    // 0) Clock Wizard: 100 MHz -> 50 MHz
-    wire clk_sys;        // 50 MHz
+    // ============================================================
+    // 0) Clock Wizard: 100 MHz -> 50 MHz (HW) / bypass (SIM)
+    // ============================================================
+    wire clk_sys;
     wire clk_locked;
 
-    // IP Clocking Wizard (ajustá el nombre si tu IP no es clk_wiz_0)
+`ifdef SIM
+    // En simulación: bypass del MMCM para evitar locked/modelos
+    assign clk_sys    = clk;     // usa el clock del TB (típicamente 100 MHz)
+    assign clk_locked = 1'b1;
+`else
     clk_wiz_50m u_clk_wiz (
         .clk_in1 (clk),        // 100 MHz
         .reset   (reset),      // reset del MMCM (activo alto)
         .clk_out1(clk_sys),    // 50 MHz
         .locked  (clk_locked)
     );
+`endif
 
-    // Reset del sistema: mantenemos el sistema en reset hasta que el MMCM esté lockeado
+    // Reset del sistema: mantenemos en reset hasta lock (en SIM lock=1)
     wire reset_sys = reset | ~clk_locked;
 
-    // Debug read ports (stream)
-    wire [4:0]  rf_dbg_addr;
-    wire [31:0] rf_dbg_data;
-    wire [11:0] dmem_dbg_addr;
-    wire [7:0]  dmem_dbg_data;
+    // ============================================================
+    // 1) Baud tick para oversampling 16x (con CLK_SYS_HZ coherente)
+    // ============================================================
+`ifdef SIM
+    // En SIM, clk_sys = clk del TB. Si tu TB es 100 MHz, esto debe ser 100 MHz.
+    localparam integer CLK_SYS_HZ = CLK_IN_HZ;     // 100 MHz por defecto
+`else
+    // En HW, clk_sys viene del clk_wiz_50m
+    localparam integer CLK_SYS_HZ = 50_000_000;    // 50 MHz real del sistema
+`endif
 
-    // NUEVO: pipeline latches flat
-    wire [23*32-1:0] dbg_pipe_flat;
-
-    // 1) Baud tick para oversampling 16x (ahora con CLK_HZ=50MHz)
     localparam integer TICK_HZ = BAUD * 16;
-    localparam integer M_TICK  = (CLK_HZ / TICK_HZ);
+    localparam integer M_TICK  = (CLK_SYS_HZ / TICK_HZ);
 
     function integer clog2;
         input integer v;
@@ -71,7 +81,9 @@ module top_debug_system #(
         .q(q_tick)
     );
 
-    // 2) UART RX/TX
+    // ============================================================
+    // 2) UART RX/TX (corren a clk_sys)
+    // ============================================================
     wire       rx_done_tick;
     wire [7:0] rx_dout;
 
@@ -104,7 +116,9 @@ module top_debug_system #(
         .tx(uart_tx)
     );
 
+    // ============================================================
     // 3) Señales DEBUG <-> CPU
+    // ============================================================
     wire        dbg_freeze;
     wire        dbg_run;
     wire        dbg_step;
@@ -122,7 +136,18 @@ module top_debug_system #(
     wire        dbg_pipe_empty;
     wire        dbg_halt_seen;
 
+    // Debug read ports (stream)
+    wire [4:0]  rf_dbg_addr;
+    wire [31:0] rf_dbg_data;
+    wire [11:0] dmem_dbg_addr;
+    wire [7:0]  dmem_dbg_data;
+
+    // pipeline latches flat
+    wire [23*32-1:0] dbg_pipe_flat;
+
+    // ============================================================
     // 4) Debug Unit
+    // ============================================================
     debug_unit_uart u_dbg (
         .clk(clk_sys),
         .reset(reset_sys),
@@ -158,7 +183,9 @@ module top_debug_system #(
         .dmem_dbg_data(dmem_dbg_data)
     );
 
+    // ============================================================
     // 5) CPU TOP
+    // ============================================================
     cpu_top #(
       .IMEM_FILE(IMEM_FILE),
       .DMEM_FILE(DMEM_FILE)

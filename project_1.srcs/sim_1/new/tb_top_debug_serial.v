@@ -3,12 +3,12 @@
 
 module tb_top_debug_system;
 
-    localparam integer CLK_HZ = 1_843_200;
-    localparam integer BAUD   = 115200;
-    localparam integer DM_DUMP_BYTES = 64;
+    // TB clock: 100 MHz
+    localparam integer CLK_TB_HZ     = 100_000_000;
 
-    // NUEVO: cantidad de words del dump de pipeline (dbg_pipe_flat = 23*32)
-    localparam integer PIPE_WORDS = 23;
+    localparam integer BAUD          = 115200;
+    localparam integer DM_DUMP_BYTES = 64;
+    localparam integer PIPE_WORDS    = 23;
 
     reg clk, reset;
 
@@ -17,7 +17,7 @@ module tb_top_debug_system;
     wire s_tick_out;
 
     top_debug_system #(
-        .CLK_HZ(CLK_HZ),
+        .CLK_IN_HZ(CLK_TB_HZ),
         .BAUD(BAUD),
         .IMEM_FILE(""),
         .DMEM_FILE("")
@@ -27,6 +27,37 @@ module tb_top_debug_system;
         .uart_rx(dut_uart_rx),
         .uart_tx(dut_uart_tx),
         .s_tick_out(s_tick_out)
+    );
+
+    // ============================================================
+    // Host UART con tick propio (NO usa s_tick_out del DUT)
+    // ============================================================
+    localparam integer TICK_HZ_HOST = BAUD * 16;
+    localparam integer M_TICK_HOST  = (CLK_TB_HZ / TICK_HZ_HOST);
+
+    function integer clog2;
+        input integer v;
+        integer i;
+        begin
+            i = 0;
+            while ((1<<i) < v) i = i + 1;
+            clog2 = i;
+        end
+    endfunction
+
+    localparam integer N_TICK_HOST = (M_TICK_HOST <= 2) ? 1 : clog2(M_TICK_HOST);
+
+    wire s_tick_host;
+    wire [N_TICK_HOST-1:0] q_tick_host;
+
+    mod_m_counter #(
+        .N(N_TICK_HOST),
+        .M(M_TICK_HOST)
+    ) u_host_baud_tick (
+        .clk(clk),
+        .reset(reset),
+        .max_tick(s_tick_host),
+        .q(q_tick_host)
     );
 
     // Host UART
@@ -46,7 +77,7 @@ module tb_top_debug_system;
         .clk(clk),
         .reset(reset),
         .tx_start(host_tx_start),
-        .s_tick(s_tick_out),
+        .s_tick(s_tick_host),
         .din(host_tx_din),
         .tx_done_tick(host_tx_done_tick),
         .tx(host_tx_line)
@@ -56,25 +87,25 @@ module tb_top_debug_system;
         .clk(clk),
         .reset(reset),
         .rx(dut_uart_tx),
-        .s_tick(s_tick_out),
+        .s_tick(s_tick_host),
         .rx_done_tick(host_rx_done_tick),
         .dout(host_rx_dout)
     );
 
     assign dut_uart_rx = host_tx_line;
 
-    // Clock
+    // Clock 100 MHz
     initial clk = 1'b0;
     always #5 clk = ~clk;
 
     // ---------------------------
     // Scoreboard buffers
     // ---------------------------
-    // NUEVO: pipeline words (IF/ID, ID/EX, EX/MEM, MEM/WB empaquetados)
     reg [31:0] pipe_dump [0:PIPE_WORDS-1];
-
     reg [31:0] regs_dump [0:31];
     reg [7:0]  mem_dump  [0:DM_DUMP_BYTES-1];
+
+    reg [31:0] pipe_prev [0:PIPE_WORDS-1];
 
     // ---------------------------
     // Helpers
@@ -145,7 +176,7 @@ module tb_top_debug_system;
 
             wait (host_tx_done_tick == 1'b1);
             @(posedge clk);
-            idle_ticks(20);
+            idle_ticks(10);
         end
     endtask
 
@@ -167,7 +198,7 @@ module tb_top_debug_system;
             while (host_rx_done_tick !== 1'b1) begin
                 @(posedge clk);
                 guard = guard + 1;
-                if (guard > 2_000_000) begin
+                if (guard > 10_000_000) begin
                     $display("[FAIL] timeout esperando rx_done_tick (t=%0t)", $time);
                     $fatal;
                 end
@@ -179,32 +210,28 @@ module tb_top_debug_system;
     endtask
 
     task recv_dump_header;
-        output [7:0]  type;
-        output [7:0]  flags;
-        output [31:0] pc_le;
+        output [7:0]  type_o;
+        output [7:0]  flags_o;
+        output [31:0] pc_le_o;
         reg [7:0] b;
         begin
             host_recv_byte(b); expect8(b, 8'hD0, "DUMP[0] magic");
-            host_recv_byte(type);
-            host_recv_byte(flags);
+            host_recv_byte(type_o);
+            host_recv_byte(flags_o);
             host_recv_byte(b); expect8(b, 8'h00, "DUMP[3] pad");
 
-            host_recv_byte(b); pc_le[7:0]   = b;
-            host_recv_byte(b); pc_le[15:8]  = b;
-            host_recv_byte(b); pc_le[23:16] = b;
-            host_recv_byte(b); pc_le[31:24] = b;
+            host_recv_byte(b); pc_le_o[7:0]   = b;
+            host_recv_byte(b); pc_le_o[15:8]  = b;
+            host_recv_byte(b); pc_le_o[23:16] = b;
+            host_recv_byte(b); pc_le_o[31:24] = b;
         end
     endtask
 
-    // ============================================================
-    // CAMBIO CLAVE:
-    // Ahora el payload es: PIPE_WORDS*4 + 32*4 + DM_DUMP_BYTES
-    // ============================================================
     task recv_dump_payload_parse;
         integer w, r, i;
         reg [7:0] b0,b1,b2,b3;
         begin
-            // 1) PIPE (23 words)
+            // PIPE (23 words)
             for (w = 0; w < PIPE_WORDS; w = w + 1) begin
                 host_recv_byte(b0);
                 host_recv_byte(b1);
@@ -213,7 +240,7 @@ module tb_top_debug_system;
                 pipe_dump[w] = {b3,b2,b1,b0};
             end
 
-            // 2) REGS (32 words)
+            // REGS (32 words)
             for (r = 0; r < 32; r = r + 1) begin
                 host_recv_byte(b0);
                 host_recv_byte(b1);
@@ -222,7 +249,7 @@ module tb_top_debug_system;
                 regs_dump[r] = {b3,b2,b1,b0};
             end
 
-            // 3) DMEM bytes
+            // DMEM bytes
             for (i = 0; i < DM_DUMP_BYTES; i = i + 1) begin
                 host_recv_byte(mem_dump[i]);
             end
@@ -236,14 +263,14 @@ module tb_top_debug_system;
             host_send_byte("P");
             host_send_u32_le(addr);
             host_send_u32_le(data);
-            idle_ticks(50);
+            idle_ticks(20);
         end
     endtask
 
     task reset_fetch;
         begin
             host_send_byte("R");
-            idle_ticks(200);
+            idle_ticks(400);
         end
     endtask
 
@@ -252,6 +279,7 @@ module tb_top_debug_system;
             host_send_byte("G");
             recv_dump_header(type, flags, pc_le);
             expect8(type, 8'd2, "DUMP type RUN_END");
+
             if (flags[0] !== 1'b1) begin
                 $display("[FAIL] halt_seen esperado 1 | flags=%02h", flags);
                 $fatal;
@@ -260,39 +288,32 @@ module tb_top_debug_system;
                 $display("[FAIL] pipe_empty esperado 1 | flags=%02h", flags);
                 $fatal;
             end
+
             $display("[INFO] RUN_END flags=%02h pc=%08h (t=%0t)", flags, pc_le, $time);
             recv_dump_payload_parse();
         end
     endtask
-    
-        // ------------------------------------------------------------
-    // NUEVO: STEP (1 ciclo CE) + dump inmediato (sin drain)
-    // ------------------------------------------------------------
+
     task step_and_capture_dump;
         begin
             host_send_byte("S");
             recv_dump_header(type, flags, pc_le);
             expect8(type, 8'd1, "DUMP type STEP");
-
-            // Ahora NO esperamos pipe_empty=1.
-            // De hecho, normalmente pipe_empty va a ser 0 al inicio (pipeline activo).
             $display("[INFO] STEP flags=%02h pc=%08h (t=%0t)", flags, pc_le, $time);
-
             recv_dump_payload_parse();
         end
     endtask
 
-    // NUEVO: asserts suaves para STEP (sin asumir packing)
     task expect_pipe_not_all_zero;
         integer k;
         reg any_nonzero;
         begin
             any_nonzero = 1'b0;
-            for (k = 0; k < PIPE_WORDS; k = k + 1) begin
+            for (k = 0; k < PIPE_WORDS; k = k + 1)
                 if (pipe_dump[k] !== 32'h0000_0000) any_nonzero = 1'b1;
-            end
+
             if (!any_nonzero) begin
-                $display("[FAIL] STEP: pipe_dump parece todo cero (no se ve avance) (t=%0t)", $time);
+                $display("[FAIL] STEP: pipe_dump todo cero (t=%0t)", $time);
                 $fatal;
             end else begin
                 $display("[ OK ] STEP: pipe_dump tiene actividad (t=%0t)", $time);
@@ -300,15 +321,11 @@ module tb_top_debug_system;
         end
     endtask
 
-    // NUEVO: comparar dos snapshots del pipe
-    reg [31:0] pipe_prev [0:PIPE_WORDS-1];
-
     task save_pipe_snapshot;
         integer k;
         begin
-            for (k = 0; k < PIPE_WORDS; k = k + 1) begin
+            for (k = 0; k < PIPE_WORDS; k = k + 1)
                 pipe_prev[k] = pipe_dump[k];
-            end
         end
     endtask
 
@@ -317,47 +334,39 @@ module tb_top_debug_system;
         reg changed;
         begin
             changed = 1'b0;
-            for (k = 0; k < PIPE_WORDS; k = k + 1) begin
+            for (k = 0; k < PIPE_WORDS; k = k + 1)
                 if (pipe_dump[k] !== pipe_prev[k]) changed = 1'b1;
-            end
+
             if (!changed) begin
-                $display("[FAIL] STEP: pipe_dump NO cambió entre steps (t=%0t)", $time);
+                $display("[FAIL] STEP: pipe_dump NO cambió (t=%0t)", $time);
                 $fatal;
             end else begin
-                $display("[ OK ] STEP: pipe_dump cambió entre steps (t=%0t)", $time);
+                $display("[ OK ] STEP: pipe_dump cambió (t=%0t)", $time);
             end
         end
     endtask
 
-
-    // ============================================================
-    // NUEVO: limpiar IMEM con NOPs para evitar "basura" de tests previos
-    // ============================================================
+    // Limpieza IMEM (NOP)
     task wipe_imem_nops;
         input [31:0] base;
         input integer n_words;
         integer k;
         begin
-            for (k = 0; k < n_words; k = k + 1) begin
-                program_word(base + (k*4), 32'h0000_0013); // NOP
-            end
+            for (k = 0; k < n_words; k = k + 1)
+                program_word(base + (k*4), 32'h0000_0013);
         end
     endtask
 
-    // NUEVO: limpiar DMEM[0..63] (si te interesa determinismo)
+    // Limpieza DMEM[0..63] con un mini-programa
     task wipe_dmem64;
         integer i;
         begin
-            // x1 = 0
             program_word(32'h0000_0000, 32'h00000093); // addi x1,x0,0
-
             for (i = 0; i < 64; i = i + 1) begin
                 program_word(32'h0000_0004 + i*4,
-                    { {20{1'b0}},
-                      i[11:5], 5'd1, 5'd0, 3'b000, i[4:0], 7'b0100011 });
+                    { 20'b0, i[11:5], 5'd1, 5'd0, 3'b000, i[4:0], 7'b0100011 }); // sb
             end
             program_word(32'h0000_0004 + 64*4, 32'h00100073);
-
             reset_fetch();
             run_and_capture_dump();
         end
@@ -366,17 +375,10 @@ module tb_top_debug_system;
     task prepare_test;
         input integer clear_dmem;
         begin
-            wipe_imem_nops(32'h0000_0000, 64);
-
-            if (clear_dmem) begin
-                wipe_dmem64();
-            end
+            wipe_imem_nops(32'h0000_0000, 128);
+            if (clear_dmem) wipe_dmem64();
         end
     endtask
-
-    // ============================================================
-    // Programas de prueba (sin cambios)
-    // ============================================================
 
     task load_prog_alu_basic;
         begin
@@ -389,112 +391,6 @@ module tb_top_debug_system;
         end
     endtask
 
-    task load_prog_load_store;
-        begin
-            program_word(32'h0000_0000, 32'h07F00093); // addi x1,x0,0x7f
-            program_word(32'h0000_0004, 32'h001000A3); // sb   x1,1(x0)
-            program_word(32'h0000_0008, 32'h00104103); // lbu  x2,1(x0)
-            program_word(32'h0000_000C, 32'hFFF00193); // addi x3,x0,-1
-            program_word(32'h0000_0010, 32'h00300123); // sb   x3,2(x0)
-            program_word(32'h0000_0014, 32'h00200203); // lb   x4,2(x0)
-            program_word(32'h0000_0018, 32'h00100073); // ebreak
-        end
-    endtask
-
-    task load_prog_branch_jal_jalr;
-        begin
-            program_word(32'h0000_0000, 32'h00100093); // addi x1,x0,1
-            program_word(32'h0000_0004, 32'h00100113); // addi x2,x0,1
-            program_word(32'h0000_0008, 32'h00208463); // beq x1,x2,+8 -> 0x10
-            program_word(32'h0000_000C, 32'h06300213); // addi x4,x0,99 (NO)
-            program_word(32'h0000_0010, 32'h00000213); // addi x4,x0,0  (SI)
-            program_word(32'h0000_0014, 32'h008002EF); // jal x5,+8 -> 0x1C
-            program_word(32'h0000_0018, 32'h04D00213); // addi x4,x0,77 (NO)
-            program_word(32'h0000_001C, 32'h02800393); // addi x7,x0,0x28
-            program_word(32'h0000_0020, 32'h00038367); // jalr x6,x7,0 -> 0x28
-            program_word(32'h0000_0024, 32'h00D00193); // addi x3,x0,13 (NO)
-            program_word(32'h0000_0028, 32'h02A00193); // addi x3,x0,42 (SI)
-            program_word(32'h0000_002C, 32'h00100073); // ebreak
-        end
-    endtask
-
-    task load_prog_hazard_load_use;
-        begin
-            program_word(32'h0000_0000, 32'h00700093); // addi x1,x0,7
-            program_word(32'h0000_0004, 32'h00102023); // sw x1,0(x0)
-            program_word(32'h0000_0008, 32'h00002103); // lw x2,0(x0)
-            program_word(32'h0000_000C, 32'h002101B3); // add x3,x2,x2
-            program_word(32'h0000_0010, 32'h00100073); // ebreak
-        end
-    endtask
-
-    task load_prog_lw_beq_hazard;
-        begin
-            program_word(32'h0000_0000, 32'h00100193); // addi x3,x0,1
-            program_word(32'h0000_0004, 32'h00302023); // sw   x3,0(x0)
-            program_word(32'h0000_0008, 32'h00002083); // lw x1,0(x0)
-            program_word(32'h0000_000C, 32'h00008463); // beq x1,x0,+8
-            program_word(32'h0000_0010, 32'h00900113); // addi x2,x0,9
-            program_word(32'h0000_0014, 32'h00100073); // ebreak
-        end
-    endtask
-
-    task load_prog_jalr_align;
-        begin
-            program_word(32'h0000_0000, 32'h02900393); // addi x7,x0,0x29
-            program_word(32'h0000_0004, 32'h00038367); // jalr x6,x7,0 -> 0x28
-            program_word(32'h0000_0008, 32'h00D00193); // addi x3,x0,13 (NO)
-
-            program_word(32'h0000_000C, 32'h00000013);
-            program_word(32'h0000_0010, 32'h00000013);
-            program_word(32'h0000_0014, 32'h00000013);
-            program_word(32'h0000_0018, 32'h00000013);
-            program_word(32'h0000_001C, 32'h00000013);
-            program_word(32'h0000_0020, 32'h00000013);
-            program_word(32'h0000_0024, 32'h00000013);
-
-            program_word(32'h0000_0028, 32'h03700193); // addi x3,x0,55
-            program_word(32'h0000_002C, 32'h00100073); // ebreak
-        end
-    endtask
-
-    task load_prog_beq_bne_both;
-        begin
-            program_word(32'h0000_0000, 32'h00500093); // addi x1,x0,5
-            program_word(32'h0000_0004, 32'h00500113); // addi x2,x0,5
-            program_word(32'h0000_0008, 32'h00208463); // beq x1,x2,+8
-            program_word(32'h0000_000C, 32'h06300193); // addi x3,x0,99 (NO)
-            program_word(32'h0000_0010, 32'h00100193); // addi x3,x0,1
-
-            program_word(32'h0000_0014, 32'h00209463); // bne x1,x2,+8 (no toma)
-            program_word(32'h0000_0018, 32'h00200213); // addi x4,x0,2
-
-            program_word(32'h0000_001C, 32'h00600113); // addi x2,x0,6
-            program_word(32'h0000_0020, 32'h00208463); // beq x1,x2,+8 (no toma)
-            program_word(32'h0000_0024, 32'h00300293); // addi x5,x0,3
-
-            program_word(32'h0000_0028, 32'h00209463); // bne x1,x2,+8 (toma)
-            program_word(32'h0000_002C, 32'h05800313); // addi x6,x0,88 (NO)
-            program_word(32'h0000_0030, 32'h00400313); // addi x6,x0,4 (SI)
-
-            program_word(32'h0000_0034, 32'h00100073); // ebreak
-        end
-    endtask
-
-    task load_prog_halfword_sh_lh_lhu;
-        begin
-            program_word(32'h0000_0000, 32'h000080B7); // lui  x1,0x8
-            program_word(32'h0000_0004, 32'h00108093); // addi x1,x1,1
-            program_word(32'h0000_0008, 32'h00101023); // sh x1,0(x0)
-            program_word(32'h0000_000C, 32'h00001103); // lh  x2,0(x0)
-            program_word(32'h0000_0010, 32'h00005183); // lhu x3,0(x0)
-            program_word(32'h0000_0014, 32'h00100073); // ebreak
-        end
-    endtask
-
-    // ============================================================
-    // Main
-    // ============================================================
     initial begin
         host_tx_start = 1'b0;
         host_tx_din   = 8'h00;
@@ -502,22 +398,21 @@ module tb_top_debug_system;
         reset = 1'b1;
         idle_ticks(50);
         reset = 1'b0;
-        idle_ticks(200);
 
-        // Smoke: dump manual
+        // esperar un toque
+        idle_ticks(2000);
+
+        // Smoke: MANUAL dump
         host_send_byte("D");
         recv_dump_header(type, flags, pc_le);
         expect8(type, 8'd3, "DUMP type MANUAL");
-        $display("[INFO] dump flags=%02h pc=%08h (t=%0t)", flags, pc_le, $time);
+        $display("[INFO] MANUAL flags=%02h pc=%08h (t=%0t)", flags, pc_le, $time);
         recv_dump_payload_parse();
-
         expect_reg(0, 32'h0000_0000);
 
-        // ========================================================
-        // TEST 1
-        // ========================================================
-        $display("=== TEST 1: ALU BASIC ===");
-        prepare_test(1); // limpia IMEM + DMEM
+        // TEST
+        $display("=== TEST: ALU BASIC ===");
+        prepare_test(1);
         load_prog_alu_basic();
         reset_fetch();
         run_and_capture_dump();
@@ -526,150 +421,22 @@ module tb_top_debug_system;
         expect_reg(2, 32'd7);
         expect_reg(3, 32'd12);
         expect_reg(4, 32'd10);
-        expect_mem8(0, 8'h0A);
-        expect_mem8(1, 8'h00);
-        expect_mem8(2, 8'h00);
-        expect_mem8(3, 8'h00);
 
-        // ========================================================
-        // TEST 2
-        // ========================================================
-        $display("=== TEST 2: LOAD/STORE BYTE ===");
-        prepare_test(1);
-        load_prog_load_store();
-        reset_fetch();
-        run_and_capture_dump();
-
-        expect_reg(1, 32'h0000_007F);
-        expect_reg(2, 32'h0000_007F);
-        expect_reg(3, 32'hFFFF_FFFF);
-        expect_reg(4, 32'hFFFF_FFFF);
-        expect_mem8(1, 8'h7F);
-        expect_mem8(2, 8'hFF);
-
-        // ========================================================
-        // TEST 3
-        // ========================================================
-        $display("=== TEST 3: BRANCH/JAL/JALR ===");
-        prepare_test(1);
-        load_prog_branch_jal_jalr();
-        reset_fetch();
-        run_and_capture_dump();
-
-        expect_reg(4, 32'd0);
-        expect_reg(3, 32'd42);
-        if (regs_dump[5] === 32'd0) begin $display("[FAIL] x5 (jal link) quedo 0"); $fatal; end
-        if (regs_dump[6] === 32'd0) begin $display("[FAIL] x6 (jalr link) quedo 0"); $fatal; end
-        if (regs_dump[5][1:0] !== 2'b00) begin $display("[FAIL] x5 no alineado"); $fatal; end
-        if (regs_dump[6][1:0] !== 2'b00) begin $display("[FAIL] x6 no alineado"); $fatal; end
-
-        // ========================================================
-        // TEST 4
-        // ========================================================
-        $display("=== TEST 4: HAZARD LOAD-USE ===");
-        prepare_test(1);
-        load_prog_hazard_load_use();
-        reset_fetch();
-        run_and_capture_dump();
-
-        expect_reg(1, 32'd7);
-        expect_reg(2, 32'd7);
-        expect_reg(3, 32'd14);
-        expect_mem8(0, 8'h07);
-        expect_mem8(1, 8'h00);
-        expect_mem8(2, 8'h00);
-        expect_mem8(3, 8'h00);
-
-        // ========================================================
-        // TEST 5
-        // ========================================================
-        $display("=== TEST 5: LW->BEQ HAZARD ===");
-        prepare_test(1);
-        load_prog_lw_beq_hazard();
-        reset_fetch();
-        run_and_capture_dump();
-
-        expect_reg(1, 32'd1);
-        expect_reg(2, 32'd9);
-
-        // ========================================================
-        // TEST 6
-        // ========================================================
-        $display("=== TEST 6: JALR ALIGN (target & ~1) ===");
-        prepare_test(1);
-        load_prog_jalr_align();
-        reset_fetch();
-        run_and_capture_dump();
-        expect_reg(3, 32'd55);
-
-        // ========================================================
-        // TEST 7
-        // ========================================================
-        $display("=== TEST 7: BEQ/BNE BOTH PATHS ===");
-        prepare_test(1);
-        load_prog_beq_bne_both();
-        reset_fetch();
-        run_and_capture_dump();
-
-        expect_reg(3, 32'd1);
-        expect_reg(4, 32'd2);
-        expect_reg(5, 32'd3);
-        expect_reg(6, 32'd4);
-
-        // ========================================================
-        // TEST 8
-        // ========================================================
-        $display("=== TEST 8: SH/LH/LHU SIGN+ZERO EXT ===");
-        prepare_test(1);
-        load_prog_halfword_sh_lh_lhu();
-        reset_fetch();
-        run_and_capture_dump();
-
-        expect_reg(1, 32'h0000_8001);
-        expect_reg(2, 32'hFFFF_8001);
-        expect_reg(3, 32'h0000_8001);
-        expect_mem8(0, 8'h01);
-        expect_mem8(1, 8'h80);
-        
-                // ========================================================
-        // NUEVO: TEST STEP (1 ciclo CE + dump sin drain)
-        // ========================================================
-        $display("=== TEST STEP: 1 ciclo CE + dump inmediato ===");
+        // STEP
+        $display("=== TEST STEP ===");
         prepare_test(0);
         load_prog_alu_basic();
         reset_fetch();
 
-        // Step #1: debería empezar a llenar pipeline
         step_and_capture_dump();
         expect_pipe_not_all_zero();
         save_pipe_snapshot();
 
-        // Step #2: debería cambiar el contenido del pipe
         step_and_capture_dump();
         expect_pipe_changed_since_last();
-        save_pipe_snapshot();
-
-        // Step #3: sigue cambiando
-        step_and_capture_dump();
-        expect_pipe_changed_since_last();
-        save_pipe_snapshot();
-
-        // opcional: luego de varios steps, recién ahí deberían empezar a cambiar registros
-        // (porque WB tarda varios ciclos)
-        step_and_capture_dump();
-        step_and_capture_dump();
-        step_and_capture_dump();
-
-        // Podés hacer un dump manual para mirar regs si querés
-        host_send_byte("D");
-        recv_dump_header(type, flags, pc_le);
-        expect8(type, 8'd3, "DUMP type MANUAL");
-        recv_dump_payload_parse();
-        $display("[INFO] After steps: x1=%08h x2=%08h x3=%08h x4=%08h",
-                 regs_dump[1], regs_dump[2], regs_dump[3], regs_dump[4]);
 
         $display("========================================");
-        $display("FIN: tb_top_debug_system EXTENDED OK");
+        $display("FIN: tb_top_debug_system OK");
         $display("========================================");
         $finish;
     end

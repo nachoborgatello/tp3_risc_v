@@ -1,11 +1,12 @@
 `timescale 1ns/1ps
+`default_nettype none
 
 module tb_debug_unit_uart;
 
   // ---------------- clock/reset ----------------
   reg clk, reset;
   initial clk = 0;
-  always #5 clk = ~clk;
+  always #5 clk = ~clk; // 100MHz
 
   // ---------------- UART RX emulado ----------------
   reg        rx_done_tick;
@@ -17,11 +18,10 @@ module tb_debug_unit_uart;
   reg        tx_done_tick;
 
   // ---------------- CPU->DEBUG (mock) -------------
-  reg  [31:0] dbg_pc;
-  reg         dbg_pipe_empty;
-  reg         dbg_halt_seen;
-  reg  [32*32-1:0] dbg_regs_flat;
-  reg  [64*8-1:0]  dbg_dmem_flat;
+  reg  [31:0]        dbg_pc;
+  reg                dbg_pipe_empty;
+  reg                dbg_halt_seen;
+  reg  [23*32-1:0]    dbg_pipe_flat;
 
   // ---------------- DEBUG->CPU (salidas DUT) ------
   wire        dbg_freeze;
@@ -35,6 +35,13 @@ module tb_debug_unit_uart;
   wire        imem_dbg_we;
   wire [31:0] imem_dbg_addr;
   wire [31:0] imem_dbg_wdata;
+
+  // ---------------- stream ports (nuevo DUT) -------
+  wire [4:0]  rf_dbg_addr;
+  reg  [31:0] rf_dbg_data;
+
+  wire [11:0] dmem_dbg_addr;
+  reg  [7:0]  dmem_dbg_data;
 
   // ---------------- DUT ---------------------------
   debug_unit_uart dut (
@@ -51,8 +58,7 @@ module tb_debug_unit_uart;
     .dbg_pc(dbg_pc),
     .dbg_pipe_empty(dbg_pipe_empty),
     .dbg_halt_seen(dbg_halt_seen),
-    .dbg_regs_flat(dbg_regs_flat),
-    .dbg_dmem_flat(dbg_dmem_flat),
+    .dbg_pipe_flat(dbg_pipe_flat),
 
     .dbg_freeze(dbg_freeze),
     .dbg_run(dbg_run),
@@ -65,25 +71,64 @@ module tb_debug_unit_uart;
 
     .imem_dbg_we(imem_dbg_we),
     .imem_dbg_addr(imem_dbg_addr),
-    .imem_dbg_wdata(imem_dbg_wdata)
+    .imem_dbg_wdata(imem_dbg_wdata),
+
+    .rf_dbg_addr(rf_dbg_addr),
+    .rf_dbg_data(rf_dbg_data),
+
+    .dmem_dbg_addr(dmem_dbg_addr),
+    .dmem_dbg_data(dmem_dbg_data)
   );
 
   // ============================================================
-  // Dump capture
+  // Mock REGFILE + DMEM
   // ============================================================
-  localparam integer DUMP_TOTAL = 200; // 4 + 4 + 128 + 64
+  reg [31:0] rf_mem [0:31];
+  reg [7:0]  dm_mem [0:4095]; // suficiente para addr[11:0]
+
+  integer i;
+  initial begin
+    for (i = 0; i < 32; i = i + 1)
+      rf_mem[i] = i * 32'h11111111;
+
+    for (i = 0; i < 4096; i = i + 1)
+      dm_mem[i] = i[7:0];
+  end
+
+  // Comb: responder a la dirección que pide el DUT
+  always @(*) begin
+    rf_dbg_data   = rf_mem[rf_dbg_addr];
+    dmem_dbg_data = dm_mem[dmem_dbg_addr];
+  end
+
+  // ============================================================
+  // Dump capture (NUEVO tamaño)
+  // Header(4) + PC(4) + PIPE(92) + REGS(128) + MEM(64) = 292
+  // ============================================================
+  localparam integer PIPE_WORDS      = 23;
+  localparam integer DUMP_HDR_BYTES  = 4;
+  localparam integer DUMP_PC_BYTES   = 4;
+  localparam integer DUMP_PIPE_BYTES = PIPE_WORDS*4; // 92
+  localparam integer DUMP_REG_BYTES  = 32*4;         // 128
+  localparam integer DUMP_MEM_BYTES  = 64;           // DM_DUMP_BYTES default
+
+  localparam integer OFF_PC   = 4;
+  localparam integer OFF_PIPE = 8;
+  localparam integer OFF_REG  = 8 + DUMP_PIPE_BYTES;               // 100
+  localparam integer OFF_MEM  = 8 + DUMP_PIPE_BYTES + DUMP_REG_BYTES; // 228
+
+  localparam integer DUMP_TOTAL = DUMP_HDR_BYTES + DUMP_PC_BYTES + DUMP_PIPE_BYTES + DUMP_REG_BYTES + DUMP_MEM_BYTES; // 292
+
   reg [7:0] dump_bytes [0:DUMP_TOTAL-1];
   integer dump_count;
 
   always @(posedge clk) begin
     if (reset) begin
       dump_count <= 0;
-    end else begin
-      if (tx_start) begin
-        if (dump_count < DUMP_TOTAL)
-          dump_bytes[dump_count] <= tx_din;
-        dump_count <= dump_count + 1;
-      end
+    end else if (tx_start) begin
+      if (dump_count < DUMP_TOTAL)
+        dump_bytes[dump_count] <= tx_din;
+      dump_count <= dump_count + 1;
     end
   end
 
@@ -130,58 +175,48 @@ module tb_debug_unit_uart;
     end
   endfunction
 
-  function [31:0] reg_flat_word;
-    input integer r;
-    begin
-      reg_flat_word = dbg_regs_flat[r*32 +: 32];
-    end
-  endfunction
-
-  function [7:0] mem_flat_byte;
-    input integer i;
-    begin
-      mem_flat_byte = dbg_dmem_flat[i*8 +: 8];
-    end
-  endfunction
-
-  // ============================================================
   // Emulación TX: cada tx_start termina 1 ciclo después
-  // ============================================================
   always @(posedge clk) begin
     if (reset) tx_done_tick <= 1'b0;
     else       tx_done_tick <= tx_start;
   end
 
-  // ============================================================
   // Detector robusto del pulso imem_dbg_we
-  // ============================================================
   reg saw_imem_we;
   always @(posedge clk) begin
     if (reset) saw_imem_we <= 1'b0;
     else if (imem_dbg_we)  saw_imem_we <= 1'b1;
   end
 
+  // Helper para detectar pulsos (evita carreras de delta-ciclos)
+  task expect_pulse_1cycle(input reg sig, input [127:0] name);
+    integer k;
+    reg seen;
+  begin
+    seen = 0;
+    for (k = 0; k < 5; k = k + 1) begin
+      @(posedge clk);
+      if (sig) seen = 1;
+    end
+    if (!seen) $display("ERROR %0s: no pulso", name);
+    else       $display("OK    %0s: pulso", name);
+  end
+  endtask
+
   // ============================================================
   // Inicialización del "mock CPU"
   // ============================================================
-  integer r;
-  integer m;
   initial begin
     rx_done_tick   = 0;
     rx_dout        = 8'h00;
 
     dbg_pc         = 32'h0000_00C8;
-    dbg_pipe_empty = 0;
-    dbg_halt_seen  = 0;
+    dbg_pipe_empty = 1'b0;
+    dbg_halt_seen  = 1'b0;
 
-    dbg_regs_flat  = { (32*32){1'b0} };
-    dbg_dmem_flat  = { (64*8){1'b0} };
-
-    for (r = 0; r < 32; r = r + 1)
-      dbg_regs_flat[r*32 +: 32] = (r * 32'h11111111);
-
-    for (m = 0; m < 64; m = m + 1)
-      dbg_dmem_flat[m*8 +: 8] = m[7:0];
+    // PIPE: 23 words con patrón (word i = 0xA0000000 + i)
+    for (i = 0; i < PIPE_WORDS; i = i + 1)
+      dbg_pipe_flat[i*32 +: 32] = 32'hA000_0000 + i;
   end
 
   // ============================================================
@@ -200,11 +235,11 @@ module tb_debug_unit_uart;
     send_u32_le(32'h0000_0010);   // addr
     send_u32_le(32'hDEAD_BEEF);   // data
 
-    // esperar hasta ver pulso o timeout
+    // esperar pulso
     begin : WAIT_WE
       integer tmo;
       tmo = 0;
-      while (!saw_imem_we && tmo < 100) begin
+      while (!saw_imem_we && tmo < 200) begin
         @(posedge clk);
         tmo = tmo + 1;
       end
@@ -218,20 +253,22 @@ module tb_debug_unit_uart;
     // ---------------- TEST 2: R ----------------
     $display("---- TEST 2: Comando R (soft reset fetch) ----");
     send_byte("R");
-
+    
+    // mirar inmediatamente el ciclo siguiente
     @(posedge clk);
-    if (dbg_flush_pipe !== 1'b1 || dbg_load_pc !== 1'b1)
-      $display("ERROR R: dbg_flush_pipe/dbg_load_pc no pulsaron");
-    else
-      $display("OK    R: pulso flush+load_pc");
-    check32(dbg_pc_value, 32'h0000_0000, "dbg_pc_value");
-
+    if (dbg_flush_pipe) $display("OK    dbg_flush_pipe pulso");
+    else                $display("ERROR dbg_flush_pipe no pulso");
+    
+    if (dbg_load_pc)    $display("OK    dbg_load_pc pulso");
+    else                $display("ERROR dbg_load_pc no pulso");
+    
     // ---------------- TEST 3: G ----------------
     $display("---- TEST 3: Comando G (RUN->HALT->DRAIN->DUMP) ----");
     dump_count = 0;
 
     send_byte("G");
 
+    // dbg_run debe ponerse en 1 al entrar a ST_RUN
     repeat (2) @(posedge clk);
     if (dbg_run !== 1'b1) $display("ERROR G: dbg_run no se activo");
     else                  $display("OK    G: dbg_run activo");
@@ -241,7 +278,8 @@ module tb_debug_unit_uart;
     dbg_halt_seen = 1'b1;
     $display("Mock: dbg_halt_seen=1");
 
-    repeat (2) @(posedge clk);
+    // ahora debería entrar en DRAIN
+    repeat (3) @(posedge clk);
     if (dbg_drain !== 1'b1) $display("ERROR: no entro en dbg_drain");
     else                    $display("OK    entro en dbg_drain");
 
@@ -252,7 +290,7 @@ module tb_debug_unit_uart;
 
     // esperar dump completo
     wait (dump_count >= DUMP_TOTAL);
-    $display("OK    dump emitido: %0d bytes", dump_count);
+    $display("OK    dump emitido: %0d bytes (esperado %0d)", dump_count, DUMP_TOTAL);
 
     // ---------------- CHECK DUMP ----------------
     $display("---- CHECK DUMP HEADER ----");
@@ -262,16 +300,23 @@ module tb_debug_unit_uart;
     check8(dump_bytes[3], 8'h00, "dump[3] reserved");
 
     $display("---- CHECK PC ----");
-    check32(u32_from_dump(4), dbg_pc, "PC word");
+    check32(u32_from_dump(OFF_PC), dbg_pc, "PC word");
+
+    $display("---- CHECK sample PIPE word 7 ----");
+    // word7 está en OFF_PIPE + 7*4
+    check32(u32_from_dump(OFF_PIPE + 7*4), 32'hA000_0007, "pipe[7] word");
 
     $display("---- CHECK sample REG x3 ----");
-    check32(u32_from_dump(8 + 3*4), reg_flat_word(3), "x3 word");
+    // x3 en OFF_REG + 3*4
+    check32(u32_from_dump(OFF_REG + 3*4), rf_mem[3], "x3 word");
 
     $display("---- CHECK sample DMEM[10] ----");
-    check8(dump_bytes[136 + 10], mem_flat_byte(10), "dmem[10]");
+    check8(dump_bytes[OFF_MEM + 10], dm_mem[10], "dmem[10]");
 
     $display("Fin TB debug_unit_uart OK.");
     $stop;
   end
 
 endmodule
+
+`default_nettype wire

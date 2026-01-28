@@ -1,149 +1,29 @@
 Time resolution is 1 ps
-[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=5625000)
-[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=10485000)
-[ OK ]                                                                                                                                                                                                                                                 DUMP type MANUAL | 03 (t=16965000)
-[INFO] dump flags=02 pc=00000000 (t=16965000)
-[ OK ]                                                                                                                                                                                                                                                           REG x0 | 00000000 (t=477045000)
-=== TEST 1: ALU BASIC ===
-[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=2667415000)
-[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=2672275000)
-[ OK ]                                                                                                                                                                                                                                                DUMP type RUN_END | 02 (t=2678755000)
-[INFO] RUN_END flags=03 pc=00000110 (t=2678755000)
-[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=3246645000)
-[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=3251505000)
-[ OK ]                                                                                                                                                                                                                                                DUMP type RUN_END | 02 (t=3257985000)
-[INFO] RUN_END flags=03 pc=00000020 (t=3257985000)
-[ OK ]                                                                                                                                                                                                                                                           REG x1 | 00000005 (t=3718065000)
-[ OK ]                                                                                                                                                                                                                                                           REG x2 | 00000007 (t=3718065000)
-[ OK ]                                                                                                                                                                                                                                                           REG x3 | 0000000c (t=3718065000)
-[ OK ]                                                                                                                                                                                                                                                           REG x4 | 0000000a (t=3718065000)
-[ OK ]                                                                                                                                                                                                                                                     DMEM[0] byte | 0a (t=3718065000)
-[ OK ]                                                                                                                                                                                                                                                     DMEM[1] byte | 00 (t=3718065000)
-[ OK ]                                                                                                                                                                                                                                                     DMEM[2] byte | 00 (t=3718065000)
-[ OK ]                                                                                                                                                                                                                                                     DMEM[3] byte | 00 (t=3718065000)
-=== TEST 2: LOAD/STORE BYTE ===
-[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=5908435000)
-[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=5913295000)
-[ OK ]                                                                                                                                                                                                                                                DUMP type RUN_END | 02 (t=5919775000)
-[INFO] RUN_END flags=03 pc=00000110 (t=5919775000)
-[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=6504465000)
-[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=6509325000)
-[ OK ]                                                                                                                                                                                                                                                DUMP type RUN_END | 02 (t=6515805000)
-[INFO] RUN_END flags=03 pc=00000024 (t=6515805000)
-[ OK ]                                                                                                                                                                                                                                                           REG x1 | 0000007f (t=6975885000)
-[ OK ]                                                                                                                                                                                                                                                           REG x2 | 0000007f (t=6975885000)
-[ OK ]                                                                                                                                                                                                                                                           REG x3 | ffffffff (t=6975885000)
-[ OK ]                                                                                                                                                                                                                                                           REG x4 | ffffffff (t=6975885000)
-[ OK ]                                                                                                                                                                                                                                                     DMEM[1] byte | 7f (t=6975885000)
-[ OK ]                                                                                                                                                                                                                                                     DMEM[2] byte | ff (t=6975885000)
-=== TEST 3: BRANCH/JAL/JALR ===
-[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=9166255000)
-[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=9171115000)
-[ OK ]                                                                                                                                                                                                                                                DUMP type RUN_END | 02 (t=9177595000)
-[INFO] RUN_END flags=03 pc=00000110 (t=9177595000)
-[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=9846315000)
-[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=9851175000)
-[ OK ]                                                                                                                                                                                                                                                DUMP type RUN_END | 02 (t=9857655000)
-[INFO] RUN_END flags=03 pc=00000038 (t=9857655000)
-[ OK ]                                                                                                                                                                                                                                                           REG x4 | 00000000 (t=10317735000)
-[ OK ]                                                                                                                                                                                                                                                           REG x3 | 0000002a (t=10317735000)
-=== TEST 4: HAZARD LOAD-USE ===
-[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=12508105000)
-[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=12512965000)
-[ OK ]                                                                                                                                                                                                                                                DUMP type RUN_END | 02 (t=12519445000)
-[INFO] RUN_END flags=03 pc=00000110 (t=12519445000)
-[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=13070545000)
-[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=13075405000)
-[ OK ]                                                                                                                                                                                                                                                DUMP type RUN_END | 02 (t=13081885000)
-[INFO] RUN_END flags=03 pc=0000001c (t=13081885000)
-[ OK ]                                                                                                                                                                                                                                                           REG x1 | 00000007 (t=13541965000)
-[ OK ]                                                                                                                                                                                                                                                           REG x2 | 00000007 (t=13541965000)
-[ OK ]                                                                                                                                                                                                                                                           REG x3 | 0000000e (t=13541965000)
-[ OK ]                                                                                                                                                                                                                                                     DMEM[0] byte | 07 (t=13541965000)
-[ OK ]                                                                                                                                                                                                                                                     DMEM[1] byte | 00 (t=13541965000)
-[ OK ]                                                                                                                                                                                                                                                     DMEM[2] byte | 00 (t=13541965000)
-[ OK ]                                                                                                                                                                                                                                                     DMEM[3] byte | 00 (t=13541965000)
-=== TEST 5: LW->BEQ HAZARD ===
-[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=15732335000)
-[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=15737195000)
-[ OK ]                                                                                                                                                                                                                                                DUMP type RUN_END | 02 (t=15743675000)
-[INFO] RUN_END flags=03 pc=00000110 (t=15743675000)
-[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=16311575000)
-[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=16316435000)
-[ OK ]                                                                                                                                                                                                                                                DUMP type RUN_END | 02 (t=16322915000)
-[INFO] RUN_END flags=03 pc=00000020 (t=16322915000)
-[ OK ]                                                                                                                                                                                                                                                           REG x1 | 00000001 (t=16782995000)
-[ OK ]                                                                                                                                                                                                                                                           REG x2 | 00000009 (t=16782995000)
-=== TEST 6: JALR ALIGN (target & ~1) ===
-[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=18973365000)
-[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=18978225000)
-[ OK ]                                                                                                                                                                                                                                                DUMP type RUN_END | 02 (t=18984705000)
-[INFO] RUN_END flags=03 pc=00000110 (t=18984705000)
-[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=19653335000)
-[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=19658195000)
-[ OK ]                                                                                                                                                                                                                                                DUMP type RUN_END | 02 (t=19664675000)
-[INFO] RUN_END flags=03 pc=00000038 (t=19664675000)
-[ OK ]                                                                                                                                                                                                                                                           REG x3 | 00000037 (t=20124755000)
-=== TEST 7: BEQ/BNE BOTH PATHS ===
-[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=22315125000)
-[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=22319985000)
-[ OK ]                                                                                                                                                                                                                                                DUMP type RUN_END | 02 (t=22326465000)
-[INFO] RUN_END flags=03 pc=00000110 (t=22326465000)
-[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=23028775000)
-[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=23033635000)
-[ OK ]                                                                                                                                                                                                                                                DUMP type RUN_END | 02 (t=23040115000)
-[INFO] RUN_END flags=03 pc=00000040 (t=23040115000)
-[ OK ]                                                                                                                                                                                                                                                           REG x3 | 00000001 (t=23500195000)
-[ OK ]                                                                                                                                                                                                                                                           REG x4 | 00000002 (t=23500195000)
-[ OK ]                                                                                                                                                                                                                                                           REG x5 | 00000003 (t=23500195000)
-[ OK ]                                                                                                                                                                                                                                                           REG x6 | 00000004 (t=23500195000)
-=== TEST 8: SH/LH/LHU SIGN+ZERO EXT ===
-[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=25690565000)
-[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=25695425000)
-[ OK ]                                                                                                                                                                                                                                                DUMP type RUN_END | 02 (t=25701905000)
-[INFO] RUN_END flags=03 pc=00000110 (t=25701905000)
-[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=26269795000)
-[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=26274655000)
-[ OK ]                                                                                                                                                                                                                                                DUMP type RUN_END | 02 (t=26281135000)
-[INFO] RUN_END flags=03 pc=00000020 (t=26281135000)
-[ OK ]                                                                                                                                                                                                                                                           REG x1 | 00008001 (t=26741215000)
-[ OK ]                                                                                                                                                                                                                                                           REG x2 | ffff8001 (t=26741215000)
-[ OK ]                                                                                                                                                                                                                                                           REG x3 | 00008001 (t=26741215000)
-[ OK ]                                                                                                                                                                                                                                                     DMEM[0] byte | 01 (t=26741215000)
-[ OK ]                                                                                                                                                                                                                                                     DMEM[1] byte | 80 (t=26741215000)
-=== TEST STEP: 1 ciclo CE + dump inmediato ===
-[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=27923475000)
-[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=27928335000)
-[ OK ]                                                                                                                                                                                                                                                   DUMP type STEP | 01 (t=27934815000)
-[INFO] STEP flags=00 pc=00000004 (t=27934815000)
-[ OK ] STEP: pipe_dump tiene actividad (t=28394895000)
-[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=28398045000)
-[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=28402905000)
-[ OK ]                                                                                                                                                                                                                                                   DUMP type STEP | 01 (t=28409385000)
-[INFO] STEP flags=00 pc=00000008 (t=28409385000)
-[ OK ] STEP: pipe_dump cambió entre steps (t=28869465000)
-[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=28872615000)
-[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=28877475000)
-[ OK ]                                                                                                                                                                                                                                                   DUMP type STEP | 01 (t=28883955000)
-[INFO] STEP flags=00 pc=0000000c (t=28883955000)
-[ OK ] STEP: pipe_dump cambió entre steps (t=29344035000)
-[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=29347185000)
-[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=29352045000)
-[ OK ]                                                                                                                                                                                                                                                   DUMP type STEP | 01 (t=29358525000)
-[INFO] STEP flags=00 pc=00000010 (t=29358525000)
-[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=29821755000)
-[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=29826615000)
-[ OK ]                                                                                                                                                                                                                                                   DUMP type STEP | 01 (t=29833095000)
-[INFO] STEP flags=00 pc=00000014 (t=29833095000)
-[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=30296325000)
-[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=30301185000)
-[ OK ]                                                                                                                                                                                                                                                   DUMP type STEP | 01 (t=30307665000)
-[INFO] STEP flags=01 pc=00000018 (t=30307665000)
-[ OK ]                                                                                                                                                                                                                                                    DUMP[0] magic | d0 (t=30770875000)
-[ OK ]                                                                                                                                                                                                                                                      DUMP[3] pad | 00 (t=30775735000)
-[ OK ]                                                                                                                                                                                                                                                 DUMP type MANUAL | 03 (t=30782215000)
-[INFO] After steps: x1=00000005 x2=00000007 x3=00008001 x4=00000002
-========================================
-FIN: tb_top_debug_system EXTENDED OK
-========================================
-$finish called at time : 31242295 ns : File "C:/Users/ignac/Downloads/project_1/project_1.srcs/sim_1/new/tb_top_debug_serial.v" Line 674
+---- TEST 1: Comando P (programar IMEM) ----
+OK    imem_dbg_we pulso
+OK    imem_dbg_addr
+OK    imem_dbg_wdata
+---- TEST 2: Comando R (soft reset fetch) ----
+OK    dbg_flush_pipe pulso
+OK    dbg_load_pc pulso
+---- TEST 3: Comando G (RUN->HALT->DRAIN->DUMP) ----
+OK    G: dbg_run activo
+Mock: dbg_halt_seen=1
+OK    entro en dbg_drain
+Mock: dbg_pipe_empty=1
+OK    dump emitido: 292 bytes (esperado 292)
+---- CHECK DUMP HEADER ----
+OK    dump[0] magic
+OK    ump_type RUN_END
+OK    empty+halt_seen)
+OK    dump[3] reserved
+---- CHECK PC ----
+OK    PC word
+---- CHECK sample PIPE word 7 ----
+OK    pipe[7] word
+---- CHECK sample REG x3 ----
+OK    x3 word
+---- CHECK sample DMEM[10] ----
+OK    dmem[10]
+Fin TB debug_unit_uart OK.
+$stop called at time : 9215 ns : File "C:/Users/ignac/Downloads/project_1/project_1.srcs/sim_1/new/tb_debug_unit_uart.v" Line 317

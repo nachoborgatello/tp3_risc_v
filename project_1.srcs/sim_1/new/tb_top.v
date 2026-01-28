@@ -20,9 +20,14 @@ module tb_top;
 
     wire       dbg_pipe_empty;
     wire       dbg_halt_seen;
-    wire [31:0]      dbg_pc;
-    wire [32*32-1:0] dbg_regs_flat;
-    wire [64*8-1:0]  dbg_dmem_flat;
+    wire [31:0]        dbg_pc;
+    wire [23*32-1:0]   dbg_pipe_flat;
+
+    // NUEVOS puertos debug "stream"
+    reg  [4:0]  rf_dbg_addr;
+    wire [31:0] rf_dbg_data;
+    reg  [11:0] dmem_dbg_addr;
+    wire [7:0]  dmem_dbg_data;
 
     cpu_top #(
         .IMEM_FILE(""),
@@ -48,13 +53,21 @@ module tb_top;
         .dbg_halt_seen(dbg_halt_seen),
 
         .dbg_pc(dbg_pc),
-        .dbg_regs_flat(dbg_regs_flat),
-        .dbg_dmem_flat(dbg_dmem_flat)
+        .dbg_pipe_flat(dbg_pipe_flat),
+
+        .rf_dbg_addr(rf_dbg_addr),
+        .rf_dbg_data(rf_dbg_data),
+        .dmem_dbg_addr(dmem_dbg_addr),
+        .dmem_dbg_data(dmem_dbg_data)
     );
 
+    // clock 100MHz sim (10ns)
     initial clk = 0;
     always #5 clk = ~clk;
 
+    // ----------------------------
+    // Encoders RV32I (igual que antes)
+    // ----------------------------
     function automatic [31:0] ENC_R;
         input [6:0] funct7;
         input [4:0] rs2, rs1;
@@ -123,6 +136,18 @@ module tb_top;
         end
     endfunction
 
+    function automatic [31:0] ENC_SHIFTI;
+        input [6:0] funct7;
+        input [4:0] shamt;
+        input [4:0] rs1;
+        input [2:0] funct3;
+        input [4:0] rd;
+        input [6:0] opcode;
+        begin
+            ENC_SHIFTI = {funct7, shamt, rs1, funct3, rd, opcode};
+        end
+    endfunction
+
     localparam [6:0] OP      = 7'b0110011;
     localparam [6:0] OP_IMM  = 7'b0010011;
     localparam [6:0] LOAD    = 7'b0000011;
@@ -132,6 +157,9 @@ module tb_top;
     localparam [6:0] JALR    = 7'b1100111;
     localparam [6:0] LUI     = 7'b0110111;
 
+    // ----------------------------
+    // Expect
+    // ----------------------------
     task expect32;
         input [31:0] got;
         input [31:0] exp;
@@ -146,37 +174,9 @@ module tb_top;
         end
     endtask
 
-    function automatic [31:0] X;
-        input integer r;
-        begin
-            X = dbg_regs_flat[r*32 +: 32];
-        end
-    endfunction
-
-    function automatic [31:0] DMEM_WORD64;
-        input integer byte_addr;
-        begin
-            DMEM_WORD64 = {
-                dbg_dmem_flat[(byte_addr+3)*8 +: 8],
-                dbg_dmem_flat[(byte_addr+2)*8 +: 8],
-                dbg_dmem_flat[(byte_addr+1)*8 +: 8],
-                dbg_dmem_flat[(byte_addr+0)*8 +: 8]
-            };
-        end
-    endfunction
-    
-    function automatic [31:0] ENC_SHIFTI;
-        input [6:0] funct7;
-        input [4:0] shamt;
-        input [4:0] rs1;
-        input [2:0] funct3;
-        input [4:0] rd;
-        input [6:0] opcode;
-        begin
-            ENC_SHIFTI = {funct7, shamt, rs1, funct3, rd, opcode};
-        end
-    endfunction
-
+    // ----------------------------
+    // IMEM write (igual)
+    // ----------------------------
     task imem_write_word;
         input [31:0] byte_addr;
         input [31:0] wdata;
@@ -202,6 +202,51 @@ module tb_top;
         end
     endtask
 
+    // ----------------------------
+    // NUEVO: snapshot regs + dmem
+    // ----------------------------
+    reg [31:0] regs_snap [0:31];
+    reg [7:0]  dmem_snap [0:63];
+
+    task snap_regs;
+        integer r;
+        begin
+            for (r = 0; r < 32; r = r + 1) begin
+                rf_dbg_addr = r[4:0];
+                #1; // deja propagar combinacional
+                regs_snap[r] = rf_dbg_data;
+            end
+        end
+    endtask
+
+    task snap_dmem64;
+        integer b;
+        begin
+            for (b = 0; b < 64; b = b + 1) begin
+                dmem_dbg_addr = b[11:0];
+                #1;
+                dmem_snap[b] = dmem_dbg_data;
+            end
+        end
+    endtask
+
+    function automatic [31:0] X;
+        input integer r;
+        begin
+            X = regs_snap[r];
+        end
+    endfunction
+
+    function automatic [31:0] DMEM_WORD64;
+        input integer byte_addr;
+        begin
+            DMEM_WORD64 = { dmem_snap[byte_addr+3],
+                            dmem_snap[byte_addr+2],
+                            dmem_snap[byte_addr+1],
+                            dmem_snap[byte_addr+0] };
+        end
+    endfunction
+
     integer cycles;
 
     initial begin
@@ -220,92 +265,63 @@ module tb_top;
         dbg_step  = 0;
         dbg_drain = 0;
 
+        rf_dbg_addr   = 0;
+        dmem_dbg_addr = 0;
+
         @(posedge clk);
         @(posedge clk);
         reset = 0;
 
+        // ----------------------------
         // Programa (PC base = 0)
-        // 0  addi x10,x0,32
-        imem_write_word(32'h0000_0000, ENC_I(32, 5'd0, 3'b000, 5'd10, OP_IMM));
+        // ----------------------------
+        imem_write_word(32'h0000_0000, ENC_I(32, 5'd0, 3'b000, 5'd10, OP_IMM));         // addi x10,x0,32
 
-        // 1  lui x11,0xA1B2C
-        imem_write_word(32'h0000_0004, ENC_U(20'hA1B2C, 5'd11, LUI));
-        // 2  addi x11,x11,0x3D4  => x11=0xA1B2C3D4
-        imem_write_word(32'h0000_0008, ENC_I(12'h3D4, 5'd11, 3'b000, 5'd11, OP_IMM));
+        imem_write_word(32'h0000_0004, ENC_U(20'hA1B2C, 5'd11, LUI));                  // lui x11,0xA1B2C
+        imem_write_word(32'h0000_0008, ENC_I(12'h3D4, 5'd11, 3'b000, 5'd11, OP_IMM));  // addi x11,x11,0x3D4
 
-        // 3  sw x11,0(x10)
-        imem_write_word(32'h0000_000C, ENC_S(0, 5'd11, 5'd10, 3'b010, STORE));
+        imem_write_word(32'h0000_000C, ENC_S(0, 5'd11, 5'd10, 3'b010, STORE));         // sw x11,0(x10)
 
-        // 4  lw x12,0(x10)
-        imem_write_word(32'h0000_0010, ENC_I(0, 5'd10, 3'b010, 5'd12, LOAD));
+        imem_write_word(32'h0000_0010, ENC_I(0, 5'd10, 3'b010, 5'd12, LOAD));          // lw x12,0(x10)
+        imem_write_word(32'h0000_0014, ENC_I(0, 5'd10, 3'b010, 5'd13, LOAD));          // lw x13,0(x10)
+        imem_write_word(32'h0000_0018, ENC_S(4, 5'd13, 5'd10, 3'b010, STORE));         // sw x13,4(x10)
 
-        // 5  lw x13,0(x10)
-        imem_write_word(32'h0000_0014, ENC_I(0, 5'd10, 3'b010, 5'd13, LOAD));
+        imem_write_word(32'h0000_001C, ENC_I(0, 5'd10, 3'b000, 5'd14, LOAD));          // lb x14,0(x10)
+        imem_write_word(32'h0000_0020, ENC_I(0, 5'd10, 3'b100, 5'd15, LOAD));          // lbu x15,0(x10)
+        imem_write_word(32'h0000_0024, ENC_I(0, 5'd10, 3'b001, 5'd16, LOAD));          // lh x16,0(x10)
+        imem_write_word(32'h0000_0028, ENC_I(0, 5'd10, 3'b101, 5'd17, LOAD));          // lhu x17,0(x10)
 
-        // 6  sw x13,4(x10)  (lw->sw)
-        imem_write_word(32'h0000_0018, ENC_S(4, 5'd13, 5'd10, 3'b010, STORE));
+        imem_write_word(32'h0000_002C, ENC_R(7'b0000000, 5'd13, 5'd12, 3'b000, 5'd18, OP)); // add
+        imem_write_word(32'h0000_0030, ENC_R(7'b0100000, 5'd13, 5'd12, 3'b000, 5'd19, OP)); // sub
 
-        // 7  lb x14,0(x10)
-        imem_write_word(32'h0000_001C, ENC_I(0, 5'd10, 3'b000, 5'd14, LOAD));
-        // 8  lbu x15,0(x10)
-        imem_write_word(32'h0000_0020, ENC_I(0, 5'd10, 3'b100, 5'd15, LOAD));
-        // 9  lh x16,0(x10)
-        imem_write_word(32'h0000_0024, ENC_I(0, 5'd10, 3'b001, 5'd16, LOAD));
-        // 10 lhu x17,0(x10)
-        imem_write_word(32'h0000_0028, ENC_I(0, 5'd10, 3'b101, 5'd17, LOAD));
+        imem_write_word(32'h0000_0034, ENC_I(12'h0FF, 5'd11, 3'b111, 5'd20, OP_IMM)); // andi
 
-        // 11 add x18,x12,x13
-        imem_write_word(32'h0000_002C, ENC_R(7'b0000000, 5'd13, 5'd12, 3'b000, 5'd18, OP));
-        // 12 sub x19,x12,x13
-        imem_write_word(32'h0000_0030, ENC_R(7'b0100000, 5'd13, 5'd12, 3'b000, 5'd19, OP));
+        imem_write_word(32'h0000_0038, ENC_I(1, 5'd0, 3'b000, 5'd21, OP_IMM));         // addi x21,1
 
-        // 13 andi x20,x11,0x0FF
-        imem_write_word(32'h0000_0034, ENC_I(12'h0FF, 5'd11, 3'b111, 5'd20, OP_IMM));
+        imem_write_word(32'h0000_003C, ENC_B(8, 5'd0, 5'd19, 3'b000, BRANCH));         // beq x19,x0,+8
+        imem_write_word(32'h0000_0040, ENC_I(1, 5'd21, 3'b000, 5'd21, OP_IMM));        // skipped
 
-        // 14 addi x21,x0,1
-        imem_write_word(32'h0000_0038, ENC_I(1, 5'd0, 3'b000, 5'd21, OP_IMM));
+        imem_write_word(32'h0000_0044, ENC_B(8, 5'd0, 5'd21, 3'b001, BRANCH));         // bne x21,x0,+8
+        imem_write_word(32'h0000_0048, ENC_I(2, 5'd21, 3'b000, 5'd21, OP_IMM));        // skipped
 
-        // 15 beq x19,x0,+8  (salta a 17)
-        imem_write_word(32'h0000_003C, ENC_B(8, 5'd0, 5'd19, 3'b000, BRANCH));
-        // 16 addi x21,x21,1  (skipped)
-        imem_write_word(32'h0000_0040, ENC_I(1, 5'd21, 3'b000, 5'd21, OP_IMM));
+        imem_write_word(32'h0000_004C, ENC_J(8, 5'd22, JAL));                          // jal x22,+8
+        imem_write_word(32'h0000_0050, ENC_I(123, 5'd0, 3'b000, 5'd23, OP_IMM));       // skipped
 
-        // 17 bne x21,x0,+8  (salta a 19)
-        imem_write_word(32'h0000_0044, ENC_B(8, 5'd0, 5'd21, 3'b001, BRANCH));
-        // 18 addi x21,x21,2  (skipped)
-        imem_write_word(32'h0000_0048, ENC_I(2, 5'd21, 3'b000, 5'd21, OP_IMM));
+        imem_write_word(32'h0000_0054, ENC_I(7, 5'd0, 3'b000, 5'd23, OP_IMM));         // addi x23,7
 
-        // 19 jal x22,+8 (salta a 21), link = PC+4 = 0x50
-        imem_write_word(32'h0000_004C, ENC_J(8, 5'd22, JAL));
-        // 20 addi x23,x0,123 (skipped)
-        imem_write_word(32'h0000_0050, ENC_I(123, 5'd0, 3'b000, 5'd23, OP_IMM));
+        imem_write_word(32'h0000_0058, ENC_SHIFTI(7'b0000000, 5'd2, 5'd23, 3'b001, 5'd26, OP_IMM)); // slli
+        imem_write_word(32'h0000_005C, ENC_SHIFTI(7'b0000000, 5'd1, 5'd26, 3'b101, 5'd27, OP_IMM)); // srli
 
-        // 21 addi x23,x0,7
-        imem_write_word(32'h0000_0054, ENC_I(7, 5'd0, 3'b000, 5'd23, OP_IMM));
+        imem_write_word(32'h0000_0060, ENC_I(108, 5'd0, 3'b000, 5'd5, OP_IMM));        // addi x5,108
+        imem_write_word(32'h0000_0064, ENC_I(0, 5'd5, 3'b000, 5'd6, JALR));            // jalr x6,x5,0
+        imem_write_word(32'h0000_0068, ENC_I(0, 5'd0, 3'b000, 5'd24, OP_IMM));         // skipped
+        imem_write_word(32'h0000_006C, ENC_I(9, 5'd0, 3'b000, 5'd24, OP_IMM));         // addi x24,9
 
-        // 22 slli x26,x23,2
-        imem_write_word(32'h0000_0058, ENC_SHIFTI(7'b0000000, 5'd2, 5'd23, 3'b001, 5'd26, OP_IMM));
-        
-        // 23 srli x27,x26,1
-        imem_write_word(32'h0000_005C, ENC_SHIFTI(7'b0000000, 5'd1, 5'd26, 3'b101, 5'd27, OP_IMM));
-
-        // 24 addi x5,x0,108 (0x6C)
-        imem_write_word(32'h0000_0060, ENC_I(108, 5'd0, 3'b000, 5'd5, OP_IMM));
-
-        // 25 jalr x6,x5,0  (link = 0x68, target=0x6C)
-        imem_write_word(32'h0000_0064, ENC_I(0, 5'd5, 3'b000, 5'd6, JALR));
-
-        // 26 addi x24,x0,0 (skipped)
-        imem_write_word(32'h0000_0068, ENC_I(0, 5'd0, 3'b000, 5'd24, OP_IMM));
-
-        // 27 addi x24,x0,9
-        imem_write_word(32'h0000_006C, ENC_I(9, 5'd0, 3'b000, 5'd24, OP_IMM));
-
-        // 28 ebreak
-        imem_write_word(32'h0000_0070, 32'h0010_0073);
+        imem_write_word(32'h0000_0070, 32'h0010_0073);                                 // ebreak
 
         force_pc0();
 
+        // run
         dbg_run = 1'b1;
 
         cycles = 0;
@@ -319,9 +335,16 @@ module tb_top;
             $fatal;
         end
 
+        // deja que el pipeline termine de asentar WB/MEM si hace falta
         repeat (8) @(posedge clk);
 
+        // snapshot con los puertos nuevos
+        snap_regs();
+        snap_dmem64();
+
+        // ----------------------------
         // Reg checks
+        // ----------------------------
         expect32(X(10), 32'd32,         "x10 base addr");
         expect32(X(11), 32'hA1B2_C3D4,  "x11 pattern");
         expect32(X(12), 32'hA1B2_C3D4,  "x12 lw");
@@ -342,12 +365,15 @@ module tb_top;
         expect32(X(6),  32'h0000_0068,  "x6 jalr link");
         expect32(X(24), 32'h0000_0009,  "x24 after jalr");
 
+        // ----------------------------
         // DMEM checks (solo bytes 0..63)
+        // Nota: en tu programa, x10=32 => primer SW en 0x20
+        // ----------------------------
         expect32(DMEM_WORD64(32), 32'hA1B2_C3D4, "mem[0x20] word");
         expect32(DMEM_WORD64(36), 32'hA1B2_C3D4, "mem[0x24] word (lw->sw)");
 
         $display("========================================");
-        $display("FIN: tb_cpu_top OK");
+        $display("FIN: tb_cpu_top (nuevo top) OK");
         $display("========================================");
         $finish;
     end

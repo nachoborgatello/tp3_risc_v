@@ -1,7 +1,7 @@
 Copyright 1986-2022 Xilinx, Inc. All Rights Reserved. Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
 ---------------------------------------------------------------------------------------------------------------------------------------------
 | Tool Version : Vivado v.2025.2 (win64) Build 6299465 Fri Nov 14 19:35:11 GMT 2025
-| Date         : Sat Jan 24 14:50:35 2026
+| Date         : Wed Jan 28 17:38:22 2026
 | Host         : DESKTOP-0UNMQ8B running 64-bit major release  (build 9200)
 | Command      : report_control_sets -verbose -file top_debug_system_control_sets_placed.rpt
 | Design       : top_debug_system
@@ -79,58 +79,58 @@ Table of Contents
 |  u_clk_wiz/inst/clk_out1 |                                       | u_baud_tick/r_reg[4]_i_1_n_0   |                2 |              5 |         2.50 |
 |  u_clk_wiz/inst/clk_out1 |                                       | u_dbg/rf_dbg_addr[4]_i_1_n_0   |                3 |              7 |         2.33 |
 |  u_clk_wiz/inst/clk_out1 | u_dbg/E[0]                            | u_cpu/u_id/u_rf/SR[0]          |                4 |              8 |         2.00 |
+|  u_clk_wiz/inst/clk_out1 | u_uart_tx/b_next[0]                   | u_cpu/u_id/u_rf/SR[0]          |                2 |              8 |         4.00 |
 |  u_clk_wiz/inst/clk_out1 | u_uart_rx/b_next[0]                   | u_cpu/u_id/u_rf/SR[0]          |                2 |              8 |         4.00 |
 |  u_clk_wiz/inst/clk_out1 | u_uart_rx/state_reg[1]_0[0]           | u_cpu/u_id/u_rf/SR[0]          |                2 |              8 |         4.00 |
-|  u_clk_wiz/inst/clk_out1 | u_uart_tx/b_next[0]                   | u_cpu/u_id/u_rf/SR[0]          |                2 |              8 |         4.00 |
 |  u_clk_wiz/inst/clk_out1 | u_dbg/p_0_in                          | u_dbg/dump_idx[15]_i_1_n_0     |                5 |             16 |         3.20 |
 |  u_clk_wiz/inst/clk_out1 |                                       | u_dbg/dmem_dbg_addr[9]_i_1_n_0 |                5 |             17 |         3.40 |
 |  u_clk_wiz/inst/clk_out1 |                                       | u_cpu/u_id/u_rf/SR[0]          |               12 |             28 |         2.33 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_exmem/alu_result_out_reg[0]_1 |                                |                8 |             32 |         4.00 |
 |  u_clk_wiz/inst/clk_out1 | u_cpu/u_exmem/alu_result_out_reg[0]_0 |                                |                8 |             32 |         4.00 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/E[0]                    | u_cpu/u_id/u_rf/SR[0]          |               21 |             32 |         1.52 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[1]_6[0]      | u_cpu/u_id/u_rf/SR[0]          |               19 |             32 |         1.68 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[3]_4[0]      | u_cpu/u_id/u_rf/SR[0]          |               18 |             32 |         1.78 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[4]_6[0]      | u_cpu/u_id/u_rf/SR[0]          |               25 |             32 |         1.28 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[2]_8[0]      | u_cpu/u_id/u_rf/SR[0]          |               25 |             32 |         1.28 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[1]_3[0]      | u_cpu/u_id/u_rf/SR[0]          |               21 |             32 |         1.52 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[3]_1[0]      | u_cpu/u_id/u_rf/SR[0]          |               29 |             32 |         1.10 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[1]_8[0]      | u_cpu/u_id/u_rf/SR[0]          |               16 |             32 |         2.00 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[4]_5[0]      | u_cpu/u_id/u_rf/SR[0]          |               25 |             32 |         1.28 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[2]_4[0]      | u_cpu/u_id/u_rf/SR[0]          |               20 |             32 |         1.60 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[4]_1[0]      | u_cpu/u_id/u_rf/SR[0]          |               22 |             32 |         1.45 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[2]_7[0]      | u_cpu/u_id/u_rf/SR[0]          |               16 |             32 |         2.00 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[1]_7[0]      | u_cpu/u_id/u_rf/SR[0]          |               25 |             32 |         1.28 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[1]_9[0]      | u_cpu/u_id/u_rf/SR[0]          |               20 |             32 |         1.60 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[1]_1[0]      | u_cpu/u_id/u_rf/SR[0]          |               20 |             32 |         1.60 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[1]_10[0]     | u_cpu/u_id/u_rf/SR[0]          |               14 |             32 |         2.29 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_exmem/funct3_out_reg[0]_2     |                                |                8 |             32 |         4.00 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[3]_3[0]      | u_cpu/u_id/u_rf/SR[0]          |               21 |             32 |         1.52 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[4]_0[0]      | u_cpu/u_id/u_rf/SR[0]          |               20 |             32 |         1.60 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[2]_9[0]      | u_cpu/u_id/u_rf/SR[0]          |               24 |             32 |         1.33 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[2]_2[0]      | u_cpu/u_id/u_rf/SR[0]          |               23 |             32 |         1.39 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[1]_4[0]      | u_cpu/u_id/u_rf/SR[0]          |               23 |             32 |         1.39 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[2]_3[0]      | u_cpu/u_id/u_rf/SR[0]          |               24 |             32 |         1.33 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[2]_6[0]      | u_cpu/u_id/u_rf/SR[0]          |               15 |             32 |         2.13 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[4]_2[0]      | u_cpu/u_id/u_rf/SR[0]          |               22 |             32 |         1.45 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[4]_4[0]      | u_cpu/u_id/u_rf/SR[0]          |               14 |             32 |         2.29 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[1]_2[0]      | u_cpu/u_id/u_rf/SR[0]          |               18 |             32 |         1.78 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[1]_5[0]      | u_cpu/u_id/u_rf/SR[0]          |               18 |             32 |         1.78 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[2]_1[0]      | u_cpu/u_id/u_rf/SR[0]          |               26 |             32 |         1.23 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[3]_2[0]      | u_cpu/u_id/u_rf/SR[0]          |               21 |             32 |         1.52 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[4]_3[0]      | u_cpu/u_id/u_rf/SR[0]          |               18 |             32 |         1.78 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_exmem/alu_result_out_reg[0]_1 |                                |                8 |             32 |         4.00 |
 |  u_clk_wiz/inst/clk_out1 | u_cpu/u_exmem/funct3_out_reg[1]_1     |                                |                8 |             32 |         4.00 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[2]_5[0]      | u_cpu/u_id/u_rf/SR[0]          |               20 |             32 |         1.60 |
-|  u_clk_wiz/inst/clk_out1 | u_dbg/dbg_drain_reg_1[0]              | u_cpu/u_id/u_rf/SR[0]          |               14 |             32 |         2.29 |
-|  u_clk_wiz/inst/clk_out1 | u_cpu/u_exmem/funct3_out_reg[1]_0     |                                |                8 |             32 |         4.00 |
-|  u_clk_wiz/inst/clk_out1 | u_uart_rx/state_reg[1][0]             | u_cpu/u_id/u_rf/SR[0]          |                9 |             32 |         3.56 |
 |  u_clk_wiz/inst/clk_out1 | u_cpu/u_exmem/funct3_out_reg[0]_0     |                                |                8 |             32 |         4.00 |
 |  u_clk_wiz/inst/clk_out1 | u_cpu/u_exmem/funct3_out_reg[0]_1     |                                |                8 |             32 |         4.00 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_exmem/funct3_out_reg[1]_0     |                                |                8 |             32 |         4.00 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_exmem/funct3_out_reg[0]_2     |                                |                8 |             32 |         4.00 |
+|  u_clk_wiz/inst/clk_out1 | u_dbg/dbg_drain_reg_1[0]              | u_cpu/u_id/u_rf/SR[0]          |               14 |             32 |         2.29 |
 |  u_clk_wiz/inst/clk_out1 | u_cpu/u_exmem/funct3_out_reg[0]_3     |                                |                8 |             32 |         4.00 |
+|  u_clk_wiz/inst/clk_out1 | u_uart_rx/state_reg[1][0]             | u_cpu/u_id/u_rf/SR[0]          |                9 |             32 |         3.56 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/E[0]                    | u_cpu/u_id/u_rf/SR[0]          |               21 |             32 |         1.52 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[2]_2[0]      | u_cpu/u_id/u_rf/SR[0]          |               23 |             32 |         1.39 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[2]_3[0]      | u_cpu/u_id/u_rf/SR[0]          |               24 |             32 |         1.33 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[2]_1[0]      | u_cpu/u_id/u_rf/SR[0]          |               26 |             32 |         1.23 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[2]_6[0]      | u_cpu/u_id/u_rf/SR[0]          |               15 |             32 |         2.13 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[4]_2[0]      | u_cpu/u_id/u_rf/SR[0]          |               22 |             32 |         1.45 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[4]_3[0]      | u_cpu/u_id/u_rf/SR[0]          |               18 |             32 |         1.78 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[4]_5[0]      | u_cpu/u_id/u_rf/SR[0]          |               25 |             32 |         1.28 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[4]_0[0]      | u_cpu/u_id/u_rf/SR[0]          |               20 |             32 |         1.60 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[4]_6[0]      | u_cpu/u_id/u_rf/SR[0]          |               25 |             32 |         1.28 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[1]_10[0]     | u_cpu/u_id/u_rf/SR[0]          |               14 |             32 |         2.29 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[1]_5[0]      | u_cpu/u_id/u_rf/SR[0]          |               18 |             32 |         1.78 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[2]_7[0]      | u_cpu/u_id/u_rf/SR[0]          |               16 |             32 |         2.00 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[3]_4[0]      | u_cpu/u_id/u_rf/SR[0]          |               18 |             32 |         1.78 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[4]_4[0]      | u_cpu/u_id/u_rf/SR[0]          |               14 |             32 |         2.29 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[1]_9[0]      | u_cpu/u_id/u_rf/SR[0]          |               20 |             32 |         1.60 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[2]_5[0]      | u_cpu/u_id/u_rf/SR[0]          |               20 |             32 |         1.60 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[3]_1[0]      | u_cpu/u_id/u_rf/SR[0]          |               29 |             32 |         1.10 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[1]_7[0]      | u_cpu/u_id/u_rf/SR[0]          |               25 |             32 |         1.28 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[3]_2[0]      | u_cpu/u_id/u_rf/SR[0]          |               21 |             32 |         1.52 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[1]_3[0]      | u_cpu/u_id/u_rf/SR[0]          |               21 |             32 |         1.52 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[2]_8[0]      | u_cpu/u_id/u_rf/SR[0]          |               25 |             32 |         1.28 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[3]_3[0]      | u_cpu/u_id/u_rf/SR[0]          |               21 |             32 |         1.52 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[2]_4[0]      | u_cpu/u_id/u_rf/SR[0]          |               20 |             32 |         1.60 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[4]_1[0]      | u_cpu/u_id/u_rf/SR[0]          |               22 |             32 |         1.45 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[2]_9[0]      | u_cpu/u_id/u_rf/SR[0]          |               24 |             32 |         1.33 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[1]_8[0]      | u_cpu/u_id/u_rf/SR[0]          |               16 |             32 |         2.00 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[1]_1[0]      | u_cpu/u_id/u_rf/SR[0]          |               20 |             32 |         1.60 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[1]_4[0]      | u_cpu/u_id/u_rf/SR[0]          |               23 |             32 |         1.39 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[1]_6[0]      | u_cpu/u_id/u_rf/SR[0]          |               19 |             32 |         1.68 |
+|  u_clk_wiz/inst/clk_out1 | u_cpu/u_memwb/rd_out_reg[1]_2[0]      | u_cpu/u_id/u_rf/SR[0]          |               18 |             32 |         1.78 |
 |  u_clk_wiz/inst/clk_out1 | u_dbg/imem_dbg_we_i_1_n_0             | u_cpu/u_id/u_rf/SR[0]          |                9 |             40 |         4.44 |
-|  u_clk_wiz/inst/clk_out1 | u_dbg/imem_dbg_addr_reg[9]_0          |                                |               11 |             44 |         4.00 |
-|  u_clk_wiz/inst/clk_out1 | u_dbg/imem_dbg_we_reg_0               |                                |               11 |             44 |         4.00 |
 |  u_clk_wiz/inst/clk_out1 | u_dbg/imem_dbg_we_reg_1               |                                |               11 |             44 |         4.00 |
 |  u_clk_wiz/inst/clk_out1 | u_dbg/imem_dbg_addr_reg[8]_0          |                                |               11 |             44 |         4.00 |
+|  u_clk_wiz/inst/clk_out1 | u_dbg/imem_dbg_addr_reg[9]_0          |                                |               11 |             44 |         4.00 |
+|  u_clk_wiz/inst/clk_out1 | u_dbg/imem_dbg_we_reg_0               |                                |               11 |             44 |         4.00 |
 |  u_clk_wiz/inst/clk_out1 | u_cpu/u_idex/write_ifid               | u_dbg/dbg_drain_reg_0          |               36 |            106 |         2.94 |
 |  u_clk_wiz/inst/clk_out1 | u_dbg/p_8_in                          | u_dbg/SR[0]                    |               82 |            195 |         2.38 |
 |  u_clk_wiz/inst/clk_out1 | u_dbg/p_8_in                          | u_cpu/u_id/u_rf/SR[0]          |              111 |            253 |         2.28 |

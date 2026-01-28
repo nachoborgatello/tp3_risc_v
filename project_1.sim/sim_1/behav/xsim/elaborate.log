@@ -1,7 +1,7 @@
 Vivado Simulator v2025.2
 Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
 Copyright 2022-2025 Advanced Micro Devices, Inc. All Rights Reserved.
-Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe --incr --debug typical --relax --mt 2 -L xil_defaultlib -L unisims_ver -L unimacro_ver -L secureip --snapshot tb_top_debug_system_behav xil_defaultlib.tb_top_debug_system xil_defaultlib.glbl -log elaborate.log 
+Running: C:/AMDDesignTools/2025.2/Vivado/bin/unwrapped/win64.o/xelab.exe --incr --debug typical --relax --mt 2 -L xil_defaultlib -L unisims_ver -L unimacro_ver -L secureip -L xpm --snapshot tb_debug_unit_uart_behav xil_defaultlib.tb_debug_unit_uart xil_defaultlib.glbl -log elaborate.log 
 Using 2 slave threads.
 Starting static elaboration
 Pass Through NonSizing Optimizer
@@ -9,31 +9,7 @@ Completed static elaboration
 Starting simulation data flow analysis
 Completed simulation data flow analysis
 Time Resolution for simulation is 1ps
-Compiling module xil_defaultlib.mod_m_counter(N=1,M=1)
-Compiling module xil_defaultlib.uart_rx
-Compiling module xil_defaultlib.uart_tx
 Compiling module xil_defaultlib.debug_unit_uart_default
-Compiling module xil_defaultlib.pc_reg
-Compiling module xil_defaultlib.imem_simple_default
-Compiling module xil_defaultlib.if_stage
-Compiling module xil_defaultlib.if_id_reg
-Compiling module xil_defaultlib.hazard_detection_unit
-Compiling module xil_defaultlib.regfile
-Compiling module xil_defaultlib.imm_gen
-Compiling module xil_defaultlib.control_unit
-Compiling module xil_defaultlib.id_stage
-Compiling module xil_defaultlib.id_ex_reg
-Compiling module xil_defaultlib.forwarding_unit
-Compiling module xil_defaultlib.alu_control
-Compiling module xil_defaultlib.alu
-Compiling module xil_defaultlib.ex_stage
-Compiling module xil_defaultlib.ex_mem_reg
-Compiling module xil_defaultlib.dmem_rv32(BYTES=1024)
-Compiling module xil_defaultlib.mem_stage
-Compiling module xil_defaultlib.mem_wb_reg
-Compiling module xil_defaultlib.wb_stage
-Compiling module xil_defaultlib.cpu_top
-Compiling module xil_defaultlib.top_debug_system(CLK_HZ=1843200)
-Compiling module xil_defaultlib.tb_top_debug_system
+Compiling module xil_defaultlib.tb_debug_unit_uart
 Compiling module xil_defaultlib.glbl
-Built simulation snapshot tb_top_debug_system_behav
+Built simulation snapshot tb_debug_unit_uart_behav
