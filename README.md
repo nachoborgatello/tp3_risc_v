@@ -1,4 +1,4 @@
-# Procesador RISC-V Pipeline con Debug Unit UART
+# Trabajo Final PIPELINE PROCESADOR (RISC-V)
 
 ## 📌 Descripción general
 
